@@ -58,16 +58,16 @@ describe('crypto utilities', () => {
   });
 
   describe('generateApiKey', () => {
-    it('should generate production key with correct prefix', () => {
+    it('should generate production key with correct prefix and 40 random hex chars', () => {
       const key = generateApiKey(true);
-      
-      expect(key).toMatch(/^ps_live_[a-f0-9]{60}$/);
+      // Format: ps_live_<40 hex chars> — matches security.md spec
+      expect(key).toMatch(/^ps_live_[a-f0-9]{40}$/);
     });
 
-    it('should generate test key with correct prefix', () => {
+    it('should generate test key with correct prefix and 40 random hex chars', () => {
       const key = generateApiKey(false);
-      
-      expect(key).toMatch(/^ps_test_[a-f0-9]{60}$/);
+      // Format: ps_test_<40 hex chars> — matches security.md spec
+      expect(key).toMatch(/^ps_test_[a-f0-9]{40}$/);
     });
 
     it('should generate unique keys', () => {

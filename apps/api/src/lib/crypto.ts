@@ -17,7 +17,8 @@ export function sha256(input: string): string {
 
 export function generateApiKey(isProduction: boolean): string {
   const prefix = isProduction ? 'ps_live_' : 'ps_test_';
-  const random = randomBytes(30).toString('hex');
+  // 20 random bytes → 40 hex chars, matching the spec: ps_live_<40 random chars>
+  const random = randomBytes(20).toString('hex');
   return prefix + random;
 }
 

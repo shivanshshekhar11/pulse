@@ -12,8 +12,7 @@ import {
   segments,
   auditLogs,
 } from './schema';
-import { hashPassword } from '../lib/crypto';
-import { createHash } from 'crypto';
+import { hashPassword, generateApiKey, sha256 } from '../lib/crypto';
 
 /**
  * Comprehensive seed file for testing and exploration
@@ -197,8 +196,8 @@ async function seed() {
 
   for (const env of createdEnvironments) {
     const isProd = env.name === 'production';
-    const rawKey = `ps_${isProd ? 'live' : 'test'}_${generateRandomString(40)}`;
-    const keyHash = createHash('sha256').update(rawKey).digest('hex');
+    const rawKey = generateApiKey(isProd);
+    const keyHash = sha256(rawKey);
     const keyPrefix = rawKey.slice(0, 12);
 
     apiKeysData.push({
@@ -664,15 +663,6 @@ async function seed() {
   console.log('   7. View audit logs for all changes\n');
 
   process.exit(0);
-}
-
-function generateRandomString(length: number): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
 }
 
 // Run seed

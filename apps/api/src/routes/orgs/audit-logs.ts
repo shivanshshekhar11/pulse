@@ -1,0 +1,39 @@
+import type { FastifyInstance } from 'fastify';
+import { ZodTypeProvider } from 'fastify-type-provider-zod';
+import { ListAuditLogsRouteSchema } from '@pulse/types';
+import { assertPermission } from '../../lib/rbac';
+import { findOrgBySlug } from '../../services/organizations';
+import { listAuditLogs } from '../../services/audit';
+
+export default async function auditLogRoutes(fastify: FastifyInstance) {
+  const f = fastify.withTypeProvider<ZodTypeProvider>();
+
+  // GET /api/v1/orgs/:orgSlug/audit-logs
+  // Paginated, filterable by action, resourceType, and actorId.
+  // Only org members can read audit logs — viewer role is sufficient.
+  f.get('/:orgSlug/audit-logs', {
+    onRequest: [fastify.authenticate],
+    schema: {
+      params: ListAuditLogsRouteSchema.params,
+      querystring: ListAuditLogsRouteSchema.querystring,
+      response: ListAuditLogsRouteSchema.response,
+    },
+  }, async (request, reply) => {
+    const requestId = request.id;
+    const { orgSlug } = request.params;
+
+    const org = await findOrgBySlug(orgSlug);
+    if (!org) {
+      return reply.code(404).send({
+        error: { code: 'NOT_FOUND', message: 'Organization not found', requestId },
+      });
+    }
+
+    // Any org member can read audit logs — flags:read is the minimum permission
+    if (!(await assertPermission(request, reply, 'flags:read', org.id))) return;
+
+    const result = await listAuditLogs(org.id, request.query);
+
+    return reply.send({ data: result });
+  });
+}

@@ -163,12 +163,48 @@ export const auditLogs = pgTable('audit_logs', {
 // Relations
 import { relations } from 'drizzle-orm';
 
+export const usersRelations = relations(users, ({ many }) => ({
+  orgMemberships: many(orgMembers),
+  projectMemberships: many(projectMembers),
+}));
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  members: many(orgMembers),
+  projects: many(projects),
+  apiKeys: many(apiKeys),
+  segments: many(segments),
+  auditLogs: many(auditLogs),
+}));
+
+export const orgMembersRelations = relations(orgMembers, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [orgMembers.orgId],
+    references: [organizations.id],
+  }),
+  user: one(users, {
+    fields: [orgMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+  }),
+}));
+
 export const environmentsRelations = relations(environments, ({ one, many }) => ({
   project: one(projects, {
     fields: [environments.projectId],
     references: [projects.id],
   }),
   flags: many(flags),
+  apiKeys: many(apiKeys),
 }));
 
 export const flagsRelations = relations(flags, ({ one, many }) => ({
@@ -192,4 +228,34 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     references: [organizations.id],
   }),
   environments: many(environments),
+  members: many(projectMembers),
+}));
+
+export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [apiKeys.orgId],
+    references: [organizations.id],
+  }),
+  environment: one(environments, {
+    fields: [apiKeys.environmentId],
+    references: [environments.id],
+  }),
+}));
+
+export const segmentsRelations = relations(segments, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [segments.orgId],
+    references: [organizations.id],
+  }),
+}));
+
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [auditLogs.orgId],
+    references: [organizations.id],
+  }),
+  actor: one(users, {
+    fields: [auditLogs.actorId],
+    references: [users.id],
+  }),
 }));

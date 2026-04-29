@@ -1,17 +1,27 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
-import crypto from 'crypto';
+import {
+  serializerCompiler,
+  validatorCompiler,
+} from 'fastify-type-provider-zod';
 import { config } from './env';
-import authRoutes from './routes/auth';
 
 const fastify = Fastify({
   logger: {
     level: config.nodeEnv === 'production' ? 'info' : 'debug',
   },
+  genReqId: () => crypto.randomUUID(),
 });
 
-// Register plugins
+// ── Type provider ─────────────────────────────────────────────────────────────
+// Tells Fastify to use Zod for both request validation and response serialization.
+// Routes call fastify.withTypeProvider<ZodTypeProvider>() to get typed request/reply.
+fastify.setValidatorCompiler(validatorCompiler);
+fastify.setSerializerCompiler(serializerCompiler);
+
+// ── Plugins ───────────────────────────────────────────────────────────────────
+
 await fastify.register(cors, {
   origin: config.nodeEnv === 'production' ? false : true,
   credentials: true,
@@ -19,112 +29,114 @@ await fastify.register(cors, {
 
 await fastify.register(jwt, {
   secret: config.jwt.secret,
-  sign: {
-    expiresIn: config.jwt.accessTokenExpiry,
-  },
+  sign: { expiresIn: config.jwt.accessTokenExpiry },
 });
 
-// Request ID hook
+// ── Hooks ─────────────────────────────────────────────────────────────────────
+
 fastify.addHook('onRequest', async (request, reply) => {
-  const requestId = crypto.randomUUID();
-  request.id = requestId;
-  reply.header('X-Request-ID', requestId);
+  reply.header('X-Request-ID', request.id);
 });
 
-// Global error handler
-fastify.setErrorHandler((error: Error & { validation?: any; statusCode?: number; code?: string }, request, reply) => {
-  const requestId = request.id ?? 'unknown';
-  
-  // Log the error
-  request.log.error({
-    err: error,
-    requestId,
-    url: request.url,
-    method: request.method,
-  }, 'Request error');
+// ── Decorators ────────────────────────────────────────────────────────────────
 
-  // Don't override if response was already sent
-  if (reply.sent) {
-    return;
+fastify.decorate(
+  'authenticate',
+  async function (
+    request: import('fastify').FastifyRequest,
+    reply: import('fastify').FastifyReply
+  ) {
+    try {
+      await request.jwtVerify();
+    } catch {
+      reply.code(401).send({
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Invalid or missing authentication token',
+          requestId: request.id,
+        },
+      });
+    }
   }
+);
 
-  // Handle validation errors (Zod/Fastify schema validation)
-  if (error.validation) {
-    return reply.code(400).send({
+// ── Error handler ─────────────────────────────────────────────────────────────
+
+fastify.setErrorHandler(
+  (
+    error: Error & { validation?: unknown; statusCode?: number; code?: string },
+    request,
+    reply
+  ) => {
+    const requestId = request.id;
+
+    request.log.error(
+      { err: error, requestId, url: request.url, method: request.method },
+      'Request error'
+    );
+
+    if (reply.sent) return;
+
+    // Zod validation errors from fastify-type-provider-zod have statusCode 400
+    // and either error.validation (ajv compat) or error.name === 'ZodError'
+    if (error.validation || (error as unknown as { name?: string }).name === 'ZodError') {
+      return reply.code(400).send({
+        error: { code: 'VALIDATION_ERROR', message: 'Request validation failed', requestId },
+      });
+    }
+
+    if (error.statusCode && error.statusCode < 500) {
+      return reply.code(error.statusCode).send({
+        error: { code: error.code ?? 'CLIENT_ERROR', message: error.message, requestId },
+      });
+    }
+
+    return reply.code(500).send({
       error: {
-        code: 'VALIDATION_ERROR',
-        message: 'Request validation failed',
-        details: error.validation,
+        code: 'INTERNAL_SERVER_ERROR',
+        message:
+          config.nodeEnv === 'production' ? 'An unexpected error occurred' : error.message,
         requestId,
       },
     });
   }
+);
 
-  // Handle known HTTP errors
-  if (error.statusCode && error.statusCode < 500) {
-    return reply.code(error.statusCode).send({
-      error: {
-        code: error.code ?? 'CLIENT_ERROR',
-        message: error.message,
-        requestId,
-      },
-    });
-  }
+// ── Health check ──────────────────────────────────────────────────────────────
 
-  // Handle unexpected server errors
-  return reply.code(500).send({
-    error: {
-      code: 'INTERNAL_SERVER_ERROR',
-      message: config.nodeEnv === 'production' 
-        ? 'An unexpected error occurred' 
-        : error.message,
-      requestId,
-    },
-  });
-});
+fastify.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// JWT authentication decorator
-fastify.decorate('authenticate', async (request, reply) => {
-  try {
-    await request.jwtVerify();
-  } catch (err) {
-    reply.code(401).send({
-      error: {
-        code: 'UNAUTHORIZED',
-        message: 'Invalid or missing authentication token',
-        requestId: request.id,
-      },
-    });
-  }
-});
+// ── Routes ────────────────────────────────────────────────────────────────────
 
-// Health check
-fastify.get('/health', async () => {
-  return { status: 'ok', timestamp: new Date().toISOString() };
-});
-
-// Register routes
+const { default: authRoutes } = await import('./routes/auth/index');
 await fastify.register(authRoutes, { prefix: '/api/v1/auth' });
 
-const organizationRoutes = await import('./routes/organizations');
-await fastify.register(organizationRoutes.default, { prefix: '/api/v1/orgs' });
+const { default: orgRoutes } = await import('./routes/orgs/index');
+await fastify.register(orgRoutes, { prefix: '/api/v1/orgs' });
 
-const projectRoutes = await import('./routes/projects');
-await fastify.register(projectRoutes.default, { prefix: '/api/v1/orgs' });
+const { default: apiKeyRoutes } = await import('./routes/orgs/api-keys');
+await fastify.register(apiKeyRoutes, { prefix: '/api/v1/orgs' });
 
-const flagRoutes = await import('./routes/flags');
-await fastify.register(flagRoutes.default, { prefix: '/api/v1/orgs' });
+const { default: projectRoutes } = await import('./routes/orgs/projects/index');
+await fastify.register(projectRoutes, { prefix: '/api/v1/orgs' });
 
-const ruleRoutes = await import('./routes/rules');
-await fastify.register(ruleRoutes.default, { prefix: '/api/v1/orgs' });
+const { default: flagRoutes } = await import('./routes/orgs/projects/flags/index');
+await fastify.register(flagRoutes, { prefix: '/api/v1/orgs' });
 
-const segmentRoutes = await import('./routes/segments');
-await fastify.register(segmentRoutes.default, { prefix: '/api/v1/orgs' });
+const { default: ruleRoutes } = await import('./routes/orgs/projects/flags/rules');
+await fastify.register(ruleRoutes, { prefix: '/api/v1/orgs' });
 
-const sdkRoutes = await import('./routes/sdk');
-await fastify.register(sdkRoutes.default, { prefix: '/sdk/v1' });
+const { default: segmentRoutes } = await import('./routes/segments/index');
+await fastify.register(segmentRoutes, { prefix: '/api/v1/orgs' });
 
-// Start server
+const { default: auditLogRoutes } = await import('./routes/orgs/audit-logs');
+await fastify.register(auditLogRoutes, { prefix: '/api/v1/orgs' });
+
+const { default: sdkRoutes } = await import('./routes/sdk/index');
+await fastify.register(sdkRoutes, { prefix: '/sdk/v1' });
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+
 try {
   await fastify.listen({ port: config.port, host: '0.0.0.0' });
   console.log(`🚀 API server running on http://localhost:${config.port}`);

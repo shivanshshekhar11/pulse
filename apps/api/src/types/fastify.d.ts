@@ -7,7 +7,6 @@ declare module 'fastify' {
   }
 
   interface FastifyRequest {
-    id: string;
     apiKey?: {
       id: string;
       orgId: string;
