@@ -3,11 +3,18 @@ import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
 import { orgMembers } from '../../../db/schema';
 import {
+  ListSegmentsRouteSchema,
+  CreateSegmentRouteSchema,
+  GetSegmentRouteSchema,
+  UpdateSegmentRouteSchema,
+} from '@pulse/types';
+import {
   buildApp,
   createTestUser,
   createTestOrg,
   createTestSegment,
   cleanup,
+  parseResponse,
   uid,
 } from '../../../test/helpers';
 
@@ -60,7 +67,7 @@ describe('Segment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: unknown[] };
+      const body = parseResponse(ListSegmentsRouteSchema.response[200], res.body);
       expect(body.data.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -113,7 +120,7 @@ describe('Segment Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { name: string; description: string; orgId: string } };
+      const body = parseResponse(CreateSegmentRouteSchema.response[201], res.body);
       expect(body.data.orgId).toBe(orgId);
       expect(body.data.description).toBe('Users on the pro plan');
     });
@@ -135,6 +142,8 @@ describe('Segment Routes', () => {
         },
       });
       expect(res.statusCode).toBe(201);
+      const body = parseResponse(CreateSegmentRouteSchema.response[201], res.body);
+      expect(body.data.id).toBeTruthy();
     });
 
     it('creates a segment with an OR condition tree', async () => {
@@ -183,7 +192,7 @@ describe('Segment Routes', () => {
         },
       });
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { description: null } };
+      const body = parseResponse(CreateSegmentRouteSchema.response[201], res.body);
       expect(body.data.description).toBeNull();
     });
 
@@ -261,7 +270,7 @@ describe('Segment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { id: string; orgId: string } };
+      const body = parseResponse(GetSegmentRouteSchema.response[200], res.body);
       expect(body.data.id).toBe(segment.id);
       expect(body.data.orgId).toBe(orgId);
     });
@@ -329,7 +338,7 @@ describe('Segment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { name: string; description: string } };
+      const body = parseResponse(UpdateSegmentRouteSchema.response[200], res.body);
       expect(body.data.name).toBe('Updated Segment Name');
       expect(body.data.description).toBe('Updated description');
     });
@@ -352,6 +361,8 @@ describe('Segment Routes', () => {
         },
       });
       expect(res.statusCode).toBe(200);
+      const body = parseResponse(UpdateSegmentRouteSchema.response[200], res.body);
+      expect(body.data.id).toBe(segment.id);
     });
 
     it('partial update — only name changes, conditions preserved', async () => {
@@ -365,7 +376,7 @@ describe('Segment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { name: string; conditions: unknown } };
+      const body = parseResponse(UpdateSegmentRouteSchema.response[200], res.body);
       expect(body.data.name).toBe('Only Name Changed');
       // conditions should still be present
       expect(body.data.conditions).toBeDefined();

@@ -29,8 +29,8 @@ export default async function auditLogRoutes(fastify: FastifyInstance) {
       });
     }
 
-    // Any org member can read audit logs — flags:read is the minimum permission
-    if (!(await assertPermission(request, reply, 'flags:read', org.id))) return;
+    // Any org member can read audit logs
+    if (!(await assertPermission(request, reply, 'audit:read', org.id))) return;
 
     const result = await listAuditLogs(org.id, request.query);
 

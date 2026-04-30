@@ -4,11 +4,20 @@ import { db } from '../../../db';
 import { orgMembers } from '../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import {
+  CreateOrgRouteSchema,
+  GetOrgRouteSchema,
+  UpdateOrgRouteSchema,
+  ListMembersRouteSchema,
+  InviteMemberRouteSchema,
+  UpdateMemberRoleRouteSchema,
+} from '@pulse/types';
+import {
   buildApp,
   createTestUser,
   createTestOrg,
   cleanup,
   uid,
+  parseResponse,
 } from '../../../test/helpers';
 
 describe('Org Routes', () => {
@@ -34,7 +43,6 @@ describe('Org Routes', () => {
     orgId = org.id;
     orgSlug = org.slug;
 
-    // Add other users to the org
     await db.insert(orgMembers).values([
       { orgId, userId: adminUser.id, role: 'admin' },
       { orgId, userId: memberUser.id, role: 'member' },
@@ -71,17 +79,13 @@ describe('Org Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { id: string; slug: string; plan: string } };
+      const body = parseResponse(CreateOrgRouteSchema.response[201], res.body);
       expect(body.data.slug).toBe(slug);
       expect(body.data.plan).toBe('free');
       createdOrgIds.push(body.data.id);
 
-      // Verify owner membership
       const membership = await db.query.orgMembers.findFirst({
-        where: and(
-          eq(orgMembers.orgId, body.data.id),
-          eq(orgMembers.userId, owner.id)
-        ),
+        where: and(eq(orgMembers.orgId, body.data.id), eq(orgMembers.userId, owner.id)),
       });
       expect(membership?.role).toBe('owner');
     });
@@ -94,7 +98,7 @@ describe('Org Routes', () => {
         payload: { slug: orgSlug, name: 'Duplicate' },
       });
       expect(res.statusCode).toBe(400);
-      const body = JSON.parse(res.body) as { error: { code: string } };
+      const body = parseResponse(CreateOrgRouteSchema.response[400], res.body);
       expect(body.error.code).toBe('SLUG_TAKEN');
     });
 
@@ -138,7 +142,7 @@ describe('Org Routes', () => {
         headers: { authorization: `Bearer ${memberUser.token}` },
       });
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { id: string; slug: string } };
+      const body = parseResponse(GetOrgRouteSchema.response[200], res.body);
       expect(body.data.id).toBe(orgId);
       expect(body.data.slug).toBe(orgSlug);
     });
@@ -150,6 +154,7 @@ describe('Org Routes', () => {
         headers: { authorization: `Bearer ${outsiderUser.token}` },
       });
       expect(res.statusCode).toBe(403);
+      parseResponse(GetOrgRouteSchema.response[403], res.body);
     });
 
     it('returns 404 for a non-existent org', async () => {
@@ -159,13 +164,11 @@ describe('Org Routes', () => {
         headers: { authorization: `Bearer ${owner.token}` },
       });
       expect(res.statusCode).toBe(404);
+      parseResponse(GetOrgRouteSchema.response[404], res.body);
     });
 
     it('returns 401 without authentication', async () => {
-      const res = await app.inject({
-        method: 'GET',
-        url: `/api/v1/orgs/${orgSlug}`,
-      });
+      const res = await app.inject({ method: 'GET', url: `/api/v1/orgs/${orgSlug}` });
       expect(res.statusCode).toBe(401);
     });
   });
@@ -181,7 +184,7 @@ describe('Org Routes', () => {
         payload: { name: 'Updated Name' },
       });
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { name: string } };
+      const body = parseResponse(UpdateOrgRouteSchema.response[200], res.body);
       expect(body.data.name).toBe('Updated Name');
     });
 
@@ -193,6 +196,7 @@ describe('Org Routes', () => {
         payload: { name: 'Admin Updated' },
       });
       expect(res.statusCode).toBe(200);
+      parseResponse(UpdateOrgRouteSchema.response[200], res.body);
     });
 
     it('member cannot update org (403)', async () => {
@@ -236,8 +240,8 @@ describe('Org Routes', () => {
         headers: { authorization: `Bearer ${owner.token}` },
       });
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: Array<{ role: string; user: { email: string } }> };
-      expect(body.data.length).toBeGreaterThanOrEqual(4); // owner + admin + member + viewer
+      const body = parseResponse(ListMembersRouteSchema.response[200], res.body);
+      expect(body.data.length).toBeGreaterThanOrEqual(4);
       const roles = body.data.map(m => m.role);
       expect(roles).toContain('owner');
       expect(roles).toContain('admin');
@@ -252,6 +256,7 @@ describe('Org Routes', () => {
         headers: { authorization: `Bearer ${viewerUser.token}` },
       });
       expect(res.statusCode).toBe(200);
+      parseResponse(ListMembersRouteSchema.response[200], res.body);
     });
 
     it('outsider cannot list members (403)', async () => {
@@ -278,11 +283,10 @@ describe('Org Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { role: string; user: { email: string } } };
+      const body = parseResponse(InviteMemberRouteSchema.response[201], res.body);
       expect(body.data.role).toBe('member');
       expect(body.data.user.email).toBe(newUser.email);
 
-      // Cleanup
       await db.delete(orgMembers).where(
         and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, newUser.id))
       );
@@ -300,6 +304,7 @@ describe('Org Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
+      parseResponse(InviteMemberRouteSchema.response[201], res.body);
 
       await db.delete(orgMembers).where(
         and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, newUser.id))
@@ -309,28 +314,24 @@ describe('Org Routes', () => {
 
     it('member cannot invite (403)', async () => {
       const newUser = await createTestUser(app);
-
       const res = await app.inject({
         method: 'POST',
         url: `/api/v1/orgs/${orgSlug}/members`,
         headers: { authorization: `Bearer ${memberUser.token}` },
         payload: { email: newUser.email, role: 'viewer' },
       });
-
       expect(res.statusCode).toBe(403);
       await cleanup([], [newUser.id]);
     });
 
     it('viewer cannot invite (403)', async () => {
       const newUser = await createTestUser(app);
-
       const res = await app.inject({
         method: 'POST',
         url: `/api/v1/orgs/${orgSlug}/members`,
         headers: { authorization: `Bearer ${viewerUser.token}` },
         payload: { email: newUser.email, role: 'viewer' },
       });
-
       expect(res.statusCode).toBe(403);
       await cleanup([], [newUser.id]);
     });
@@ -343,7 +344,7 @@ describe('Org Routes', () => {
         payload: { email: `ghost-${uid()}@test.com`, role: 'member' },
       });
       expect(res.statusCode).toBe(404);
-      const body = JSON.parse(res.body) as { error: { code: string } };
+      const body = parseResponse(InviteMemberRouteSchema.response[404], res.body);
       expect(body.error.code).toBe('USER_NOT_FOUND');
     });
 
@@ -355,7 +356,7 @@ describe('Org Routes', () => {
         payload: { email: memberUser.email, role: 'viewer' },
       });
       expect(res.statusCode).toBe(400);
-      const body = JSON.parse(res.body) as { error: { code: string } };
+      const body = parseResponse(InviteMemberRouteSchema.response[400], res.body);
       expect(body.error.code).toBe('ALREADY_MEMBER');
     });
 
@@ -383,10 +384,9 @@ describe('Org Routes', () => {
         payload: { role: 'member' },
       });
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { role: string } };
+      const body = parseResponse(UpdateMemberRoleRouteSchema.response[200], res.body);
       expect(body.data.role).toBe('member');
 
-      // Restore
       await db.update(orgMembers)
         .set({ role: 'viewer' })
         .where(and(eq(orgMembers.orgId, orgId), eq(orgMembers.userId, viewerUser.id)));

@@ -4,6 +4,12 @@ import { db } from '../../../../../db';
 import { orgMembers, rules } from '../../../../../db/schema';
 import { eq } from 'drizzle-orm';
 import {
+  ListRulesRouteSchema,
+  CreateRuleRouteSchema,
+  UpdateRuleRouteSchema,
+  ReorderRulesRouteSchema,
+} from '@pulse/types';
+import {
   buildApp,
   createTestUser,
   createTestOrg,
@@ -12,6 +18,7 @@ import {
   createTestFlag,
   createTestRule,
   cleanup,
+  parseResponse,
   rulesUrl,
   ruleUrl,
   uid,
@@ -72,9 +79,9 @@ describe('Rule Routes', () => {
 
   describe('GET /rules', () => {
     it('returns rules ordered by priority ascending', async () => {
-      const r1 = await createTestRule(flagId, { priority: 2 });
-      const r2 = await createTestRule(flagId, { priority: 0 });
-      const r3 = await createTestRule(flagId, { priority: 1 });
+      await createTestRule(flagId, { priority: 2 });
+      await createTestRule(flagId, { priority: 0 });
+      await createTestRule(flagId, { priority: 1 });
 
       const res = await app.inject({
         method: 'GET',
@@ -83,7 +90,7 @@ describe('Rule Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: Array<{ id: string; priority: number }> };
+      const body = parseResponse(ListRulesRouteSchema.response[200], res.body);
       const priorities = body.data.map(r => r.priority);
       // Must be sorted ascending
       for (let i = 1; i < priorities.length; i++) {
@@ -138,7 +145,7 @@ describe('Rule Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { name: string; priority: number; percentage: number; enabled: boolean } };
+      const body = parseResponse(CreateRuleRouteSchema.response[201], res.body);
       expect(body.data.name).toBe('Pro Users');
       expect(body.data.priority).toBe(0);
       expect(body.data.percentage).toBe(100);
@@ -162,6 +169,8 @@ describe('Rule Routes', () => {
         },
       });
       expect(res.statusCode).toBe(201);
+      const body = parseResponse(CreateRuleRouteSchema.response[201], res.body);
+      expect(body.data.id).toBeTruthy();
     });
 
     it('creates a rule with an OR condition tree', async () => {
@@ -223,7 +232,7 @@ describe('Rule Routes', () => {
         },
       });
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { priority: number; percentage: number } };
+      const body = parseResponse(CreateRuleRouteSchema.response[201], res.body);
       expect(body.data.priority).toBe(0);
       expect(body.data.percentage).toBe(100);
     });
@@ -307,7 +316,7 @@ describe('Rule Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { name: string; percentage: number; enabled: boolean } };
+      const body = parseResponse(UpdateRuleRouteSchema.response[200], res.body);
       expect(body.data.name).toBe('Updated Rule');
       expect(body.data.percentage).toBe(75);
       expect(body.data.enabled).toBe(false);
@@ -331,6 +340,8 @@ describe('Rule Routes', () => {
         },
       });
       expect(res.statusCode).toBe(200);
+      const body = parseResponse(UpdateRuleRouteSchema.response[200], res.body);
+      expect(body.data.id).toBe(rule.id);
     });
 
     it('returns 404 for a rule that does not belong to this flag', async () => {
@@ -432,7 +443,7 @@ describe('Rule Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { success: boolean } };
+      const body = parseResponse(ReorderRulesRouteSchema.response[200], res.body);
       expect(body.data.success).toBe(true);
 
       // Verify priorities were updated

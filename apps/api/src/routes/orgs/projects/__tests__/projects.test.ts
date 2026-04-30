@@ -3,12 +3,21 @@ import type { FastifyInstance } from 'fastify';
 import { db } from '../../../../db';
 import { orgMembers } from '../../../../db/schema';
 import {
+  ListProjectsRouteSchema,
+  CreateProjectRouteSchema,
+  GetProjectRouteSchema,
+  UpdateProjectRouteSchema,
+  ListEnvironmentsRouteSchema,
+  CreateEnvironmentRouteSchema,
+} from '@pulse/types';
+import {
   buildApp,
   createTestUser,
   createTestOrg,
   createTestProject,
   createTestEnvironment,
   cleanup,
+  parseResponse,
   uid,
 } from '../../../../test/helpers';
 
@@ -60,7 +69,7 @@ describe('Project & Environment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: unknown[] };
+      const body = parseResponse(ListProjectsRouteSchema.response[200], res.body);
       expect(body.data.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -96,7 +105,7 @@ describe('Project & Environment Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { slug: string; orgId: string } };
+      const body = parseResponse(CreateProjectRouteSchema.response[201], res.body);
       expect(body.data.slug).toBe(slug);
       expect(body.data.orgId).toBe(orgId);
     });
@@ -171,7 +180,7 @@ describe('Project & Environment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { id: string; slug: string } };
+      const body = parseResponse(GetProjectRouteSchema.response[200], res.body);
       expect(body.data.id).toBe(project.id);
       expect(body.data.slug).toBe(project.slug);
     });
@@ -220,7 +229,7 @@ describe('Project & Environment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { name: string } };
+      const body = parseResponse(UpdateProjectRouteSchema.response[200], res.body);
       expect(body.data.name).toBe('Updated Name');
     });
 
@@ -356,7 +365,7 @@ describe('Project & Environment Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: Array<{ name: string }> };
+      const body = parseResponse(ListEnvironmentsRouteSchema.response[200], res.body);
       expect(body.data).toHaveLength(2);
       const names = body.data.map(e => e.name);
       expect(names).toContain('production');
@@ -397,7 +406,7 @@ describe('Project & Environment Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { name: string; color: string } };
+      const body = parseResponse(CreateEnvironmentRouteSchema.response[201], res.body);
       expect(body.data.name).toBe('production');
       expect(body.data.color).toBe('#ef4444');
     });
@@ -413,7 +422,7 @@ describe('Project & Environment Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { color: string } };
+      const body = parseResponse(CreateEnvironmentRouteSchema.response[201], res.body);
       expect(body.data.color).toBe('#6366f1');
     });
 

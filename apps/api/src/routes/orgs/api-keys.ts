@@ -31,7 +31,7 @@ export default async function apiKeyRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'apikeys:*', org.id))) return;
+    if (!(await assertPermission(request, reply, 'apikeys:read', org.id))) return;
 
     const keys = await apiKeyService.listApiKeys(org.id);
 
@@ -70,7 +70,7 @@ export default async function apiKeyRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'apikeys:*', org.id))) return;
+    if (!(await assertPermission(request, reply, 'apikeys:write', org.id))) return;
 
     const { key, rawKey } = await apiKeyService.createApiKey(org.id, userId, request.body);
     if (!key) {
@@ -123,7 +123,7 @@ export default async function apiKeyRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'apikeys:*', org.id))) return;
+    if (!(await assertPermission(request, reply, 'apikeys:write', org.id))) return;
 
     const key = await apiKeyService.findApiKey(org.id, keyId);
     if (!key) {

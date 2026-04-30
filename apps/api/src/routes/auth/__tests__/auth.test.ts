@@ -1,10 +1,16 @@
-import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
-import { users, refreshTokens } from '../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { refreshTokens } from '../../../db/schema';
 import { sha256 } from '../../../lib/crypto';
-import { buildApp, createTestUser, cleanup, uid } from '../../../test/helpers';
+import {
+  RegisterRouteSchema,
+  LoginRouteSchema,
+  RefreshRouteSchema,
+  LogoutRouteSchema,
+  MeRouteSchema,
+} from '@pulse/types';
+import { buildApp, createTestUser, cleanup, uid, parseResponse } from '../../../test/helpers';
 
 describe('Auth Routes', () => {
   let app: FastifyInstance;
@@ -31,7 +37,7 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { user: { id: string; email: string }; accessToken: string; refreshToken: string } };
+      const body = parseResponse(RegisterRouteSchema.response[201], res.body);
       expect(body.data.user.email).toBe(email);
       expect(body.data.accessToken).toBeTruthy();
       expect(body.data.refreshToken).toBeTruthy();
@@ -51,7 +57,7 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { user: { id: string; name: null } } };
+      const body = parseResponse(RegisterRouteSchema.response[201], res.body);
       expect(body.data.user.name).toBeNull();
       createdUserIds.push(body.data.user.id);
     });
@@ -64,7 +70,7 @@ describe('Auth Routes', () => {
         payload: { email, password: 'password123' },
       });
       expect(first.statusCode).toBe(201);
-      const firstBody = JSON.parse(first.body) as { data: { user: { id: string } } };
+      const firstBody = parseResponse(RegisterRouteSchema.response[201], first.body);
       createdUserIds.push(firstBody.data.user.id);
 
       const second = await app.inject({
@@ -73,7 +79,7 @@ describe('Auth Routes', () => {
         payload: { email, password: 'password123' },
       });
       expect(second.statusCode).toBe(400);
-      const body = JSON.parse(second.body) as { error: { code: string } };
+      const body = parseResponse(RegisterRouteSchema.response[400], second.body);
       expect(body.error.code).toBe('USER_EXISTS');
     });
 
@@ -99,7 +105,7 @@ describe('Auth Routes', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
-        payload: { email: `missing-${uid()}@test.com` }, // no password
+        payload: { email: `missing-${uid()}@test.com` },
       });
       expect(res.statusCode).toBe(400);
     });
@@ -128,7 +134,7 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { user: { email: string }; accessToken: string; refreshToken: string } };
+      const body = parseResponse(LoginRouteSchema.response[200], res.body);
       expect(body.data.user.email).toBe(user.email);
       expect(body.data.accessToken).toBeTruthy();
       expect(body.data.refreshToken).toBeTruthy();
@@ -145,7 +151,7 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(401);
-      const body = JSON.parse(res.body) as { error: { code: string } };
+      const body = parseResponse(LoginRouteSchema.response[401], res.body);
       expect(body.error.code).toBe('INVALID_CREDENTIALS');
     });
 
@@ -157,7 +163,7 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(401);
-      const body = JSON.parse(res.body) as { error: { code: string } };
+      const body = parseResponse(LoginRouteSchema.response[401], res.body);
       expect(body.error.code).toBe('INVALID_CREDENTIALS');
     });
 
@@ -194,8 +200,8 @@ describe('Auth Routes', () => {
         payload: { email: user.email, password: 'wrong' },
       });
 
-      const b1 = JSON.parse(wrongEmail.body) as { error: { code: string } };
-      const b2 = JSON.parse(wrongPassword.body) as { error: { code: string } };
+      const b1 = parseResponse(LoginRouteSchema.response[401], wrongEmail.body);
+      const b2 = parseResponse(LoginRouteSchema.response[401], wrongPassword.body);
       expect(b1.error.code).toBe('INVALID_CREDENTIALS');
       expect(b2.error.code).toBe('INVALID_CREDENTIALS');
     });
@@ -205,14 +211,13 @@ describe('Auth Routes', () => {
 
   describe('POST /api/v1/auth/refresh', () => {
     it('issues new tokens and rotates the refresh token', async () => {
-      // Register to get initial tokens
       const email = `refresh-${uid()}@test.com`;
       const regRes = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
         payload: { email, password: 'password123' },
       });
-      const regBody = JSON.parse(regRes.body) as { data: { user: { id: string }; refreshToken: string } };
+      const regBody = parseResponse(RegisterRouteSchema.response[201], regRes.body);
       createdUserIds.push(regBody.data.user.id);
       const originalRefreshToken = regBody.data.refreshToken;
 
@@ -223,10 +228,9 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { accessToken: string; refreshToken: string } };
+      const body = parseResponse(RefreshRouteSchema.response[200], res.body);
       expect(body.data.accessToken).toBeTruthy();
       expect(body.data.refreshToken).toBeTruthy();
-      // New refresh token must differ from the original
       expect(body.data.refreshToken).not.toBe(originalRefreshToken);
     });
 
@@ -237,18 +241,16 @@ describe('Auth Routes', () => {
         url: '/api/v1/auth/register',
         payload: { email, password: 'password123' },
       });
-      const regBody = JSON.parse(regRes.body) as { data: { user: { id: string }; refreshToken: string } };
+      const regBody = parseResponse(RegisterRouteSchema.response[201], regRes.body);
       createdUserIds.push(regBody.data.user.id);
       const originalToken = regBody.data.refreshToken;
 
-      // First refresh — rotates the token
       await app.inject({
         method: 'POST',
         url: '/api/v1/auth/refresh',
         payload: { refreshToken: originalToken },
       });
 
-      // Second refresh with the same (now revoked) token
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/refresh',
@@ -256,7 +258,7 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(401);
-      const body = JSON.parse(res.body) as { error: { code: string } };
+      const body = parseResponse(RefreshRouteSchema.response[401], res.body);
       expect(body.error.code).toBe('INVALID_TOKEN');
     });
 
@@ -264,7 +266,7 @@ describe('Auth Routes', () => {
       const res = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/refresh',
-        payload: { refreshToken: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' },
+        payload: { refreshToken: 'a'.repeat(64) },
       });
       expect(res.statusCode).toBe(401);
     });
@@ -273,12 +275,11 @@ describe('Auth Routes', () => {
       const user = await createTestUser(app);
       createdUserIds.push(user.id);
 
-      // Insert an already-expired token directly
       const rawToken = 'b'.repeat(64);
       await db.insert(refreshTokens).values({
         userId: user.id,
         tokenHash: sha256(rawToken),
-        expiresAt: new Date(Date.now() - 1000), // expired 1 second ago
+        expiresAt: new Date(Date.now() - 1000),
       });
 
       const res = await app.inject({
@@ -309,7 +310,7 @@ describe('Auth Routes', () => {
         url: '/api/v1/auth/register',
         payload: { email, password: 'password123' },
       });
-      const regBody = JSON.parse(regRes.body) as { data: { user: { id: string }; refreshToken: string } };
+      const regBody = parseResponse(RegisterRouteSchema.response[201], regRes.body);
       createdUserIds.push(regBody.data.user.id);
       const refreshToken = regBody.data.refreshToken;
 
@@ -319,8 +320,8 @@ describe('Auth Routes', () => {
         payload: { refreshToken },
       });
       expect(logoutRes.statusCode).toBe(200);
+      parseResponse(LogoutRouteSchema.response[200], logoutRes.body); // validates shape
 
-      // Attempting to refresh after logout should fail
       const refreshRes = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/refresh',
@@ -336,6 +337,7 @@ describe('Auth Routes', () => {
         payload: {},
       });
       expect(res.statusCode).toBe(200);
+      parseResponse(LogoutRouteSchema.response[200], res.body);
     });
 
     it('succeeds with an unknown refreshToken (idempotent)', async () => {
@@ -345,6 +347,7 @@ describe('Auth Routes', () => {
         payload: { refreshToken: 'c'.repeat(64) },
       });
       expect(res.statusCode).toBe(200);
+      parseResponse(LogoutRouteSchema.response[200], res.body);
     });
   });
 
@@ -362,17 +365,14 @@ describe('Auth Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { id: string; email: string } };
+      const body = parseResponse(MeRouteSchema.response[200], res.body);
       expect(body.data.id).toBe(user.id);
       expect(body.data.email).toBe(user.email);
       expect(res.body).not.toContain('passwordHash');
     });
 
     it('returns 401 without a token', async () => {
-      const res = await app.inject({
-        method: 'GET',
-        url: '/api/v1/auth/me',
-      });
+      const res = await app.inject({ method: 'GET', url: '/api/v1/auth/me' });
       expect(res.statusCode).toBe(401);
     });
 
@@ -386,7 +386,6 @@ describe('Auth Routes', () => {
     });
 
     it('returns 401 with a token signed by a different secret', async () => {
-      // Manually craft a token with a wrong secret
       const fakeToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmYWtlIiwiZW1haWwiOiJmYWtlQHRlc3QuY29tIn0.wrongsignature';
       const res = await app.inject({
         method: 'GET',
@@ -403,7 +402,7 @@ describe('Auth Routes', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/api/v1/auth/me',
-        headers: { authorization: user.token }, // no "Bearer " prefix
+        headers: { authorization: user.token },
       });
       expect(res.statusCode).toBe(401);
     });

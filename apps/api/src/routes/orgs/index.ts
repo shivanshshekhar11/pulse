@@ -74,7 +74,7 @@ export default async function orgRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'flags:read', org.id))) return;
+    if (!(await assertPermission(request, reply, 'org:read', org.id))) return;
 
     return reply.send({ data: org });
   });
@@ -99,7 +99,7 @@ export default async function orgRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'members:update', org.id))) return;
+    if (!(await assertPermission(request, reply, 'org:update', org.id))) return;
 
     const updated = await orgService.updateOrg(org.id, request.body);
     if (!updated) {
@@ -140,7 +140,7 @@ export default async function orgRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'flags:read', org.id))) return;
+    if (!(await assertPermission(request, reply, 'members:read', org.id))) return;
 
     const members = await orgService.listMembers(org.id);
     return reply.send({ data: members });

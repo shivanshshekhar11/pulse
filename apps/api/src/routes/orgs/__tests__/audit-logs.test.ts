@@ -2,14 +2,15 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
 import { orgMembers, auditLogs } from '../../../db/schema';
+import { ListAuditLogsRouteSchema } from '@pulse/types';
 import {
   buildApp,
   createTestUser,
   createTestOrg,
-  createTestFlag,
   createTestProject,
   createTestEnvironment,
   cleanup,
+  parseResponse,
   uid,
 } from '../../../test/helpers';
 
@@ -41,7 +42,7 @@ describe('Audit Log Routes', () => {
 
     // Seed some audit log entries by performing real mutations via the API
     const project = await createTestProject(orgId);
-    const env = await createTestEnvironment(project.id, { name: 'development' });
+    await createTestEnvironment(project.id, { name: 'development' });
 
     // Create a flag (writes flag.created audit log)
     await app.inject({
@@ -81,9 +82,7 @@ describe('Audit Log Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as {
-        data: { items: unknown[]; total: number; limit: number; offset: number };
-      };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       expect(Array.isArray(body.data.items)).toBe(true);
       expect(body.data.items.length).toBeGreaterThanOrEqual(2);
       expect(typeof body.data.total).toBe('number');
@@ -144,9 +143,7 @@ describe('Audit Log Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as {
-        data: { items: Array<{ action: string }> };
-      };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       // Every returned entry must have the requested action
       for (const item of body.data.items) {
         expect(item.action).toBe('flag.created');
@@ -161,9 +158,7 @@ describe('Audit Log Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as {
-        data: { items: Array<{ resourceType: string }> };
-      };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       for (const item of body.data.items) {
         expect(item.resourceType).toBe('segment');
       }
@@ -177,9 +172,7 @@ describe('Audit Log Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as {
-        data: { items: Array<{ actorId: string }> };
-      };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       for (const item of body.data.items) {
         expect(item.actorId).toBe(owner.id);
       }
@@ -220,9 +213,7 @@ describe('Audit Log Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as {
-        data: { items: Array<{ action: string; actorId: string }> };
-      };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       for (const item of body.data.items) {
         expect(item.action).toBe('flag.created');
         expect(item.actorId).toBe(owner.id);
@@ -241,9 +232,7 @@ describe('Audit Log Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as {
-        data: { items: unknown[]; limit: number };
-      };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       expect(body.data.items).toHaveLength(1);
       expect(body.data.limit).toBe(1);
     });
@@ -260,8 +249,8 @@ describe('Audit Log Routes', () => {
         headers: { authorization: `Bearer ${owner.token}` },
       });
 
-      const allBody = JSON.parse(allRes.body) as { data: { items: Array<{ id: string }> } };
-      const offsetBody = JSON.parse(offsetRes.body) as { data: { items: Array<{ id: string }> } };
+      const allBody = parseResponse(ListAuditLogsRouteSchema.response[200], allRes.body);
+      const offsetBody = parseResponse(ListAuditLogsRouteSchema.response[200], offsetRes.body);
 
       // The first item in the offset=1 result should be the second item in offset=0
       if (allBody.data.items.length >= 2 && offsetBody.data.items.length >= 1) {
@@ -276,7 +265,7 @@ describe('Audit Log Routes', () => {
         headers: { authorization: `Bearer ${owner.token}` },
       });
 
-      const body = JSON.parse(res.body) as { data: { total: number } };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       // total should be >= 2 (we created at least 2 entries in beforeAll)
       expect(body.data.total).toBeGreaterThanOrEqual(2);
     });
@@ -333,9 +322,7 @@ describe('Audit Log Routes', () => {
         headers: { authorization: `Bearer ${owner.token}` },
       });
 
-      const body = JSON.parse(res.body) as {
-        data: { items: Array<{ orgId: string }> };
-      };
+      const body = parseResponse(ListAuditLogsRouteSchema.response[200], res.body);
       // Every entry must belong to our org
       for (const item of body.data.items) {
         expect(item.orgId).toBe(orgId);

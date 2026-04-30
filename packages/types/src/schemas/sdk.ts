@@ -62,6 +62,35 @@ export const GetRulesetRouteSchema = {
 } as const;
 
 // ============================================================================
+// SSE event shapes
+//
+// These are the JSON payloads written to the SSE stream.
+// The SDK parses these to decide whether to re-fetch the ruleset.
+// ============================================================================
+
+/**
+ * Sent immediately on SSE connection — delivers the current ruleset so the
+ * client doesn't need a separate GET /ruleset call.
+ */
+export const SseInitEventSchema = z.object({
+  type: z.literal('init'),
+  ruleset: RulesetSchema,
+});
+
+/**
+ * Sent after any flag or rule mutation — tells the SDK to re-evaluate.
+ * The SDK re-fetches GET /ruleset to get the updated payload.
+ */
+export const SseRulesetUpdatedEventSchema = z.object({
+  type: z.literal('ruleset:updated'),
+  flagId: z.string().uuid(),
+  action: z.enum(['created', 'updated', 'deleted', 'rule.created', 'rule.updated', 'rule.deleted', 'rules.reordered']),
+});
+
+export type SseInitEvent = z.infer<typeof SseInitEventSchema>;
+export type SseRulesetUpdatedEvent = z.infer<typeof SseRulesetUpdatedEventSchema>;
+
+// ============================================================================
 // Inferred types
 // ============================================================================
 

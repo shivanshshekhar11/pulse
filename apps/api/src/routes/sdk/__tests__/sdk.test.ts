@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
-import { apiKeys, flags, rules, segments } from '../../../db/schema';
+import { apiKeys } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
+import { GetRulesetRouteSchema } from '@pulse/types';
 import {
   buildApp,
   createTestUser,
@@ -14,6 +15,7 @@ import {
   createTestRule,
   createTestSegment,
   cleanup,
+  parseResponse,
   uid,
 } from '../../../test/helpers';
 
@@ -144,7 +146,7 @@ describe('SDK Routes — GET /sdk/v1/ruleset', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { flags: unknown[]; segments: unknown[] } };
+      const body = parseResponse(GetRulesetRouteSchema.response[200], res.body);
       expect(Array.isArray(body.data.flags)).toBe(true);
       expect(Array.isArray(body.data.segments)).toBe(true);
     });
@@ -163,7 +165,7 @@ describe('SDK Routes — GET /sdk/v1/ruleset', () => {
         headers: { 'x-api-key': rawKey },
       });
 
-      const body = JSON.parse(res.body) as { data: { flags: Array<{ key: string }> } };
+      const body = parseResponse(GetRulesetRouteSchema.response[200], res.body);
       const keys = body.data.flags.map(f => f.key);
       expect(keys).toContain(flag.key);
       // The other environment's flag must NOT appear
@@ -182,7 +184,7 @@ describe('SDK Routes — GET /sdk/v1/ruleset', () => {
         headers: { 'x-api-key': rawKey },
       });
 
-      const body = JSON.parse(res.body) as { data: { flags: Array<{ key: string; rules: Array<{ id: string; priority: number }> }> } };
+      const body = parseResponse(GetRulesetRouteSchema.response[200], res.body);
       const flagData = body.data.flags.find(f => f.key === flag.key);
       expect(flagData).toBeDefined();
       expect(flagData!.rules).toHaveLength(3);
@@ -201,7 +203,7 @@ describe('SDK Routes — GET /sdk/v1/ruleset', () => {
         headers: { 'x-api-key': rawKey },
       });
 
-      const body = JSON.parse(res.body) as { data: { segments: Array<{ id: string }> } };
+      const body = parseResponse(GetRulesetRouteSchema.response[200], res.body);
       const segmentIds = body.data.segments.map(s => s.id);
       expect(segmentIds).toContain(segment.id);
     });
@@ -219,8 +221,8 @@ describe('SDK Routes — GET /sdk/v1/ruleset', () => {
         headers: { 'x-api-key': rawKey },
       });
 
-      const body = JSON.parse(res.body) as { data: { flags: Array<Record<string, unknown>> } };
-      const flagData = body.data.flags.find(f => f['key'] === flag.key);
+      const body = parseResponse(GetRulesetRouteSchema.response[200], res.body);
+      const flagData = body.data.flags.find(f => f.key === flag.key);
       expect(flagData).toBeDefined();
       expect(flagData).toHaveProperty('id');
       expect(flagData).toHaveProperty('key');
@@ -235,22 +237,6 @@ describe('SDK Routes — GET /sdk/v1/ruleset', () => {
     });
 
     it('returns 400 for an API key not associated with an environment', async () => {
-      // Create a key with no environmentId
-      const [key] = await db
-        .insert(apiKeys)
-        .values({
-          orgId,
-          environmentId: null,
-          name: `no-env-key-${uid()}`,
-          keyPrefix: 'ps_test_noen',
-          keyHash: `noenvironmenthash${uid()}`,
-          scopes: ['read'],
-          createdBy: userId,
-        })
-        .returning();
-
-      // We need the raw key to match the hash — use a known value
-      // Instead, create via service to get a real raw key
       const noEnvKey = await createTestApiKey(orgId, environmentId, userId);
       // Manually null out the environmentId
       await db
@@ -285,7 +271,7 @@ describe('SDK Routes — GET /sdk/v1/ruleset', () => {
         headers: { 'x-api-key': keyA.rawKey },
       });
 
-      const body = JSON.parse(res.body) as { data: { flags: Array<{ key: string }> } };
+      const body = parseResponse(GetRulesetRouteSchema.response[200], res.body);
       const keys = body.data.flags.map(f => f.key);
       expect(keys).not.toContain(flagB.key);
     });

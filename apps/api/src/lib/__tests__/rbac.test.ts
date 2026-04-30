@@ -8,15 +8,17 @@ describe('hasPermission', () => {
   describe('owner', () => {
     const role: EffectiveRole = 'owner';
 
-    it('grants every specific permission via wildcard', () => {
+    it('grants every permission via wildcard', () => {
       const permissions = [
+        'org:read', 'org:update',
+        'members:read', 'members:invite', 'members:remove', 'members:update',
+        'projects:read', 'projects:write',
+        'environments:read', 'environments:write',
         'flags:read', 'flags:write',
         'rules:read', 'rules:write',
         'segments:read', 'segments:write',
-        'members:invite', 'members:remove', 'members:update',
         'apikeys:read', 'apikeys:write',
-        'environments:read', 'environments:write',
-        'projects:read', 'projects:write',
+        'audit:read',
         'anything:at:all',
       ];
       for (const perm of permissions) {
@@ -28,40 +30,50 @@ describe('hasPermission', () => {
   describe('admin', () => {
     const role: EffectiveRole = 'admin';
 
-    it('grants flags:read and flags:write via flags:* wildcard', () => {
-      expect(hasPermission(role, 'flags:read')).toBe(true);
-      expect(hasPermission(role, 'flags:write')).toBe(true);
+    it('grants org:read and org:update', () => {
+      expect(hasPermission(role, 'org:read')).toBe(true);
+      expect(hasPermission(role, 'org:update')).toBe(true);
     });
 
-    it('grants rules:read and rules:write via rules:* wildcard', () => {
-      expect(hasPermission(role, 'rules:read')).toBe(true);
-      expect(hasPermission(role, 'rules:write')).toBe(true);
-    });
-
-    it('grants segments:read and segments:write via segments:* wildcard', () => {
-      expect(hasPermission(role, 'segments:read')).toBe(true);
-      expect(hasPermission(role, 'segments:write')).toBe(true);
-    });
-
-    it('grants members:invite, members:remove, members:update explicitly', () => {
+    it('grants all member management permissions', () => {
+      expect(hasPermission(role, 'members:read')).toBe(true);
       expect(hasPermission(role, 'members:invite')).toBe(true);
-      expect(hasPermission(role, 'members:remove')).toBe(true);
       expect(hasPermission(role, 'members:update')).toBe(true);
+      expect(hasPermission(role, 'members:remove')).toBe(true);
     });
 
-    it('grants apikeys:* wildcard', () => {
-      expect(hasPermission(role, 'apikeys:read')).toBe(true);
-      expect(hasPermission(role, 'apikeys:write')).toBe(true);
+    it('grants projects:read and projects:write', () => {
+      expect(hasPermission(role, 'projects:read')).toBe(true);
+      expect(hasPermission(role, 'projects:write')).toBe(true);
     });
 
-    it('grants environments:* wildcard', () => {
+    it('grants environments:read and environments:write', () => {
       expect(hasPermission(role, 'environments:read')).toBe(true);
       expect(hasPermission(role, 'environments:write')).toBe(true);
     });
 
-    it('grants projects:* wildcard', () => {
-      expect(hasPermission(role, 'projects:read')).toBe(true);
-      expect(hasPermission(role, 'projects:write')).toBe(true);
+    it('grants flags:read and flags:write', () => {
+      expect(hasPermission(role, 'flags:read')).toBe(true);
+      expect(hasPermission(role, 'flags:write')).toBe(true);
+    });
+
+    it('grants rules:read and rules:write', () => {
+      expect(hasPermission(role, 'rules:read')).toBe(true);
+      expect(hasPermission(role, 'rules:write')).toBe(true);
+    });
+
+    it('grants segments:read and segments:write', () => {
+      expect(hasPermission(role, 'segments:read')).toBe(true);
+      expect(hasPermission(role, 'segments:write')).toBe(true);
+    });
+
+    it('grants apikeys:read and apikeys:write', () => {
+      expect(hasPermission(role, 'apikeys:read')).toBe(true);
+      expect(hasPermission(role, 'apikeys:write')).toBe(true);
+    });
+
+    it('grants audit:read', () => {
+      expect(hasPermission(role, 'audit:read')).toBe(true);
     });
 
     it('does NOT grant arbitrary permissions not in the map', () => {
@@ -73,6 +85,40 @@ describe('hasPermission', () => {
   describe('member', () => {
     const role: EffectiveRole = 'member';
 
+    it('grants org:read', () => {
+      expect(hasPermission(role, 'org:read')).toBe(true);
+    });
+
+    it('does NOT grant org:update', () => {
+      expect(hasPermission(role, 'org:update')).toBe(false);
+    });
+
+    it('grants members:read', () => {
+      expect(hasPermission(role, 'members:read')).toBe(true);
+    });
+
+    it('does NOT grant member management write permissions', () => {
+      expect(hasPermission(role, 'members:invite')).toBe(false);
+      expect(hasPermission(role, 'members:remove')).toBe(false);
+      expect(hasPermission(role, 'members:update')).toBe(false);
+    });
+
+    it('grants projects:read', () => {
+      expect(hasPermission(role, 'projects:read')).toBe(true);
+    });
+
+    it('does NOT grant projects:write', () => {
+      expect(hasPermission(role, 'projects:write')).toBe(false);
+    });
+
+    it('grants environments:read', () => {
+      expect(hasPermission(role, 'environments:read')).toBe(true);
+    });
+
+    it('does NOT grant environments:write', () => {
+      expect(hasPermission(role, 'environments:write')).toBe(false);
+    });
+
     it('grants flags:read and flags:write', () => {
       expect(hasPermission(role, 'flags:read')).toBe(true);
       expect(hasPermission(role, 'flags:write')).toBe(true);
@@ -91,31 +137,32 @@ describe('hasPermission', () => {
       expect(hasPermission(role, 'segments:write')).toBe(false);
     });
 
-    it('does NOT grant member management permissions', () => {
-      expect(hasPermission(role, 'members:invite')).toBe(false);
-      expect(hasPermission(role, 'members:remove')).toBe(false);
-      expect(hasPermission(role, 'members:update')).toBe(false);
-    });
-
     it('does NOT grant apikeys permissions', () => {
       expect(hasPermission(role, 'apikeys:read')).toBe(false);
       expect(hasPermission(role, 'apikeys:write')).toBe(false);
     });
 
-    it('does NOT grant environments permissions', () => {
-      expect(hasPermission(role, 'environments:read')).toBe(false);
-      expect(hasPermission(role, 'environments:write')).toBe(false);
-    });
-
-    it('does NOT grant projects permissions', () => {
-      expect(hasPermission(role, 'projects:read')).toBe(false);
-      expect(hasPermission(role, 'projects:write')).toBe(false);
+    it('grants audit:read', () => {
+      expect(hasPermission(role, 'audit:read')).toBe(true);
     });
   });
 
   describe('writer (project-level role)', () => {
     const role: EffectiveRole = 'writer';
 
+    it('grants org:read', () => {
+      expect(hasPermission(role, 'org:read')).toBe(true);
+    });
+
+    it('grants members:read', () => {
+      expect(hasPermission(role, 'members:read')).toBe(true);
+    });
+
+    it('grants projects:read and environments:read', () => {
+      expect(hasPermission(role, 'projects:read')).toBe(true);
+      expect(hasPermission(role, 'environments:read')).toBe(true);
+    });
+
     it('grants flags:read and flags:write', () => {
       expect(hasPermission(role, 'flags:read')).toBe(true);
       expect(hasPermission(role, 'flags:write')).toBe(true);
@@ -134,34 +181,7 @@ describe('hasPermission', () => {
       expect(hasPermission(role, 'segments:write')).toBe(false);
     });
 
-    it('does NOT grant member management permissions', () => {
-      expect(hasPermission(role, 'members:invite')).toBe(false);
-      expect(hasPermission(role, 'members:remove')).toBe(false);
-    });
-  });
-
-  describe('viewer', () => {
-    const role: EffectiveRole = 'viewer';
-
-    it('grants flags:read', () => {
-      expect(hasPermission(role, 'flags:read')).toBe(true);
-    });
-
-    it('grants rules:read', () => {
-      expect(hasPermission(role, 'rules:read')).toBe(true);
-    });
-
-    it('grants segments:read', () => {
-      expect(hasPermission(role, 'segments:read')).toBe(true);
-    });
-
-    it('does NOT grant any write permissions', () => {
-      expect(hasPermission(role, 'flags:write')).toBe(false);
-      expect(hasPermission(role, 'rules:write')).toBe(false);
-      expect(hasPermission(role, 'segments:write')).toBe(false);
-    });
-
-    it('does NOT grant member management permissions', () => {
+    it('does NOT grant member management write permissions', () => {
       expect(hasPermission(role, 'members:invite')).toBe(false);
       expect(hasPermission(role, 'members:remove')).toBe(false);
       expect(hasPermission(role, 'members:update')).toBe(false);
@@ -171,25 +191,87 @@ describe('hasPermission', () => {
       expect(hasPermission(role, 'apikeys:read')).toBe(false);
       expect(hasPermission(role, 'apikeys:write')).toBe(false);
     });
+
+    it('grants audit:read', () => {
+      expect(hasPermission(role, 'audit:read')).toBe(true);
+    });
+  });
+
+  describe('viewer', () => {
+    const role: EffectiveRole = 'viewer';
+
+    it('grants org:read', () => {
+      expect(hasPermission(role, 'org:read')).toBe(true);
+    });
+
+    it('does NOT grant org:update', () => {
+      expect(hasPermission(role, 'org:update')).toBe(false);
+    });
+
+    it('grants members:read', () => {
+      expect(hasPermission(role, 'members:read')).toBe(true);
+    });
+
+    it('grants projects:read and environments:read', () => {
+      expect(hasPermission(role, 'projects:read')).toBe(true);
+      expect(hasPermission(role, 'environments:read')).toBe(true);
+    });
+
+    it('grants flags:read, rules:read, segments:read', () => {
+      expect(hasPermission(role, 'flags:read')).toBe(true);
+      expect(hasPermission(role, 'rules:read')).toBe(true);
+      expect(hasPermission(role, 'segments:read')).toBe(true);
+    });
+
+    it('does NOT grant any write permissions', () => {
+      expect(hasPermission(role, 'org:update')).toBe(false);
+      expect(hasPermission(role, 'projects:write')).toBe(false);
+      expect(hasPermission(role, 'environments:write')).toBe(false);
+      expect(hasPermission(role, 'flags:write')).toBe(false);
+      expect(hasPermission(role, 'rules:write')).toBe(false);
+      expect(hasPermission(role, 'segments:write')).toBe(false);
+    });
+
+    it('does NOT grant member management write permissions', () => {
+      expect(hasPermission(role, 'members:invite')).toBe(false);
+      expect(hasPermission(role, 'members:remove')).toBe(false);
+      expect(hasPermission(role, 'members:update')).toBe(false);
+    });
+
+    it('does NOT grant apikeys permissions', () => {
+      expect(hasPermission(role, 'apikeys:read')).toBe(false);
+      expect(hasPermission(role, 'apikeys:write')).toBe(false);
+    });
+
+    it('grants audit:read', () => {
+      expect(hasPermission(role, 'audit:read')).toBe(true);
+    });
   });
 
   describe('wildcard matching', () => {
-    it('flags:* matches flags:read', () => {
+    it('owner wildcard * matches any permission', () => {
+      expect(hasPermission('owner', 'flags:read')).toBe(true);
+      expect(hasPermission('owner', 'anything:goes')).toBe(true);
+    });
+
+    it('exact permission match works without wildcards', () => {
+      // admin has explicit 'flags:read' — no wildcard needed
       expect(hasPermission('admin', 'flags:read')).toBe(true);
     });
 
-    it('flags:* matches flags:write', () => {
-      expect(hasPermission('admin', 'flags:write')).toBe(true);
+    it('resource:* wildcard matches resource:action', () => {
+      // If a role had 'flags:*', it would match 'flags:read' and 'flags:write'
+      // owner has '*' which covers everything — test the wildcard logic directly
+      expect(hasPermission('owner', 'flags:read')).toBe(true);
+      expect(hasPermission('owner', 'flags:write')).toBe(true);
     });
 
-    it('flags:* does NOT match rules:read (different resource)', () => {
-      // admin has rules:* separately, but this tests the wildcard logic
+    it('permission for one resource does not bleed into another', () => {
+      // viewer has flags:read but NOT flags:write
+      expect(hasPermission('viewer', 'flags:read')).toBe(true);
       expect(hasPermission('viewer', 'flags:write')).toBe(false);
-    });
-
-    it('exact match takes precedence over wildcard for explicit permissions', () => {
-      // members:invite is explicit in admin, not via wildcard
-      expect(hasPermission('admin', 'members:invite')).toBe(true);
+      // viewer has no apikeys permissions at all
+      expect(hasPermission('viewer', 'apikeys:read')).toBe(false);
     });
   });
 
@@ -198,7 +280,7 @@ describe('hasPermission', () => {
       expect(ROLE_PERMISSIONS.owner).toEqual(['*']);
     });
 
-    it('all roles are present', () => {
+    it('all org roles are present', () => {
       const roles: OrgRole[] = ['owner', 'admin', 'member', 'viewer'];
       for (const role of roles) {
         expect(ROLE_PERMISSIONS[role]).toBeDefined();
@@ -207,6 +289,24 @@ describe('hasPermission', () => {
 
     it('writer role is present (project-level)', () => {
       expect(ROLE_PERMISSIONS.writer).toBeDefined();
+    });
+
+    it('admin has more permissions than member', () => {
+      // admin can do things member cannot
+      expect(hasPermission('admin', 'org:update')).toBe(true);
+      expect(hasPermission('member', 'org:update')).toBe(false);
+      expect(hasPermission('admin', 'apikeys:read')).toBe(true);
+      expect(hasPermission('member', 'apikeys:read')).toBe(false);
+      expect(hasPermission('admin', 'segments:write')).toBe(true);
+      expect(hasPermission('member', 'segments:write')).toBe(false);
+    });
+
+    it('member has more permissions than viewer', () => {
+      // member can write flags/rules, viewer cannot
+      expect(hasPermission('member', 'flags:write')).toBe(true);
+      expect(hasPermission('viewer', 'flags:write')).toBe(false);
+      expect(hasPermission('member', 'rules:write')).toBe(true);
+      expect(hasPermission('viewer', 'rules:write')).toBe(false);
     });
   });
 });

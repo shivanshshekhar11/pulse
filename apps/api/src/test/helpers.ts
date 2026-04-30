@@ -15,6 +15,7 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { sql } from 'drizzle-orm';
+import { z } from 'zod';
 import { db } from '../db';
 import {
   users,
@@ -379,4 +380,22 @@ export function rulesUrl(orgSlug: string, projectSlug: string, envName: string, 
 
 export function ruleUrl(orgSlug: string, projectSlug: string, envName: string, flagKey: string, ruleId: string): string {
   return `${rulesUrl(orgSlug, projectSlug, envName, flagKey)}/${ruleId}`;
+}
+
+// ── Response validation ───────────────────────────────────────────────────────
+
+/**
+ * Parses a raw HTTP response body through a Zod schema.
+ *
+ * Use this instead of `JSON.parse(res.body) as { ... }` for success responses.
+ * The cast is a TypeScript-only assertion that does nothing at runtime.
+ * This helper actually validates the shape — if the API returns a response
+ * that doesn't match the declared schema, the test fails with a clear Zod error.
+ *
+ * @example
+ * const body = parseResponse(CreateFlagRouteSchema.response[201], res.body);
+ * expect(body.data.key).toBe('my_flag');
+ */
+export function parseResponse<T extends z.ZodTypeAny>(schema: T, rawBody: string): z.infer<T> {
+  return schema.parse(JSON.parse(rawBody));
 }

@@ -3,6 +3,12 @@ import type { FastifyInstance } from 'fastify';
 import { db } from '../../../../../db';
 import { orgMembers } from '../../../../../db/schema';
 import {
+  ListFlagsRouteSchema,
+  CreateFlagRouteSchema,
+  GetFlagRouteSchema,
+  UpdateFlagRouteSchema,
+} from '@pulse/types';
+import {
   buildApp,
   createTestUser,
   createTestOrg,
@@ -10,6 +16,7 @@ import {
   createTestEnvironment,
   createTestFlag,
   cleanup,
+  parseResponse,
   flagsUrl,
   flagUrl,
   uid,
@@ -73,7 +80,7 @@ describe('Flag Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: unknown[] };
+      const body = parseResponse(ListFlagsRouteSchema.response[200], res.body);
       expect(body.data.length).toBeGreaterThanOrEqual(2);
     });
 
@@ -131,12 +138,12 @@ describe('Flag Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: Record<string, unknown> };
-      expect(body.data['key']).toBe(key);
-      expect(body.data['type']).toBe('boolean');
-      expect(body.data['version']).toBe(1);
-      expect(body.data['enabled']).toBe(true);
-      expect(body.data['tags']).toEqual(['beta', 'test']);
+      const body = parseResponse(CreateFlagRouteSchema.response[201], res.body);
+      expect(body.data.key).toBe(key);
+      expect(body.data.type).toBe('boolean');
+      expect(body.data.version).toBe(1);
+      expect(body.data.enabled).toBe(true);
+      expect(body.data.tags).toEqual(['beta', 'test']);
     });
 
     it('creates a string flag', async () => {
@@ -148,7 +155,7 @@ describe('Flag Routes', () => {
         payload: { key, name: 'String Flag', type: 'string', defaultValue: 'control' },
       });
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { type: string; defaultValue: unknown } };
+      const body = parseResponse(CreateFlagRouteSchema.response[201], res.body);
       expect(body.data.type).toBe('string');
       expect(body.data.defaultValue).toBe('control');
     });
@@ -162,6 +169,8 @@ describe('Flag Routes', () => {
         payload: { key, name: 'Number Flag', type: 'number', defaultValue: 5000 },
       });
       expect(res.statusCode).toBe(201);
+      const body = parseResponse(CreateFlagRouteSchema.response[201], res.body);
+      expect(body.data.type).toBe('number');
     });
 
     it('creates a json flag', async () => {
@@ -173,6 +182,8 @@ describe('Flag Routes', () => {
         payload: { key, name: 'JSON Flag', type: 'json', defaultValue: { theme: 'dark' } },
       });
       expect(res.statusCode).toBe(201);
+      const body = parseResponse(CreateFlagRouteSchema.response[201], res.body);
+      expect(body.data.type).toBe('json');
     });
 
     it('defaults type to boolean and enabled to false', async () => {
@@ -184,7 +195,7 @@ describe('Flag Routes', () => {
         payload: { key, name: 'Defaults Flag' },
       });
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { type: string; enabled: boolean } };
+      const body = parseResponse(CreateFlagRouteSchema.response[201], res.body);
       expect(body.data.type).toBe('boolean');
       expect(body.data.enabled).toBe(false);
     });
@@ -280,7 +291,7 @@ describe('Flag Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { key: string } };
+      const body = parseResponse(GetFlagRouteSchema.response[200], res.body);
       expect(body.data.key).toBe(flag.key);
     });
 
@@ -318,7 +329,7 @@ describe('Flag Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { name: string; enabled: boolean; version: number } };
+      const body = parseResponse(UpdateFlagRouteSchema.response[200], res.body);
       expect(body.data.name).toBe('Updated Name');
       expect(body.data.enabled).toBe(true);
       expect(body.data.version).toBe(2); // incremented
@@ -407,7 +418,7 @@ describe('Flag Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: { enabled: boolean; name: string } };
+      const body = parseResponse(UpdateFlagRouteSchema.response[200], res.body);
       expect(body.data.enabled).toBe(true);
       expect(body.data.name).toBe('Test Flag'); // unchanged
     });

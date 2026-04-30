@@ -3,6 +3,10 @@ import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
 import { orgMembers } from '../../../db/schema';
 import {
+  ListApiKeysRouteSchema,
+  CreateApiKeyRouteSchema,
+} from '@pulse/types';
+import {
   buildApp,
   createTestUser,
   createTestOrg,
@@ -10,6 +14,7 @@ import {
   createTestEnvironment,
   createTestApiKey,
   cleanup,
+  parseResponse,
   uid,
 } from '../../../test/helpers';
 
@@ -63,7 +68,7 @@ describe('API Key Routes', () => {
       });
 
       expect(res.statusCode).toBe(200);
-      const body = JSON.parse(res.body) as { data: Array<Record<string, unknown>> };
+      const body = parseResponse(ListApiKeysRouteSchema.response[200], res.body);
       expect(Array.isArray(body.data)).toBe(true);
       // keyHash must never appear in the list response
       for (const key of body.data) {
@@ -84,7 +89,7 @@ describe('API Key Routes', () => {
         headers: { authorization: `Bearer ${owner.token}` },
       });
 
-      const body = JSON.parse(res.body) as { data: Array<{ id: string }> };
+      const body = parseResponse(ListApiKeysRouteSchema.response[200], res.body);
       const ids = body.data.map(k => k.id);
       expect(ids).not.toContain(revoked.id);
     });
@@ -129,7 +134,7 @@ describe('API Key Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { rawKey: string; keyPrefix: string; id: string } };
+      const body = parseResponse(CreateApiKeyRouteSchema.response[201], res.body);
       expect(body.data.rawKey).toBeTruthy();
       expect(body.data.rawKey.startsWith('ps_live_')).toBe(true); // production env
       expect(body.data.keyPrefix).toBe(body.data.rawKey.slice(0, 12));
@@ -150,7 +155,7 @@ describe('API Key Routes', () => {
       });
 
       expect(res.statusCode).toBe(201);
-      const body = JSON.parse(res.body) as { data: { rawKey: string } };
+      const body = parseResponse(CreateApiKeyRouteSchema.response[201], res.body);
       expect(body.data.rawKey.startsWith('ps_test_')).toBe(true);
     });
 

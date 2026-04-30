@@ -35,7 +35,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'flags:read', org.id))) return;
+    if (!(await assertPermission(request, reply, 'projects:read', org.id))) return;
 
     const projectList = await projectService.listProjects(org.id);
     return reply.send({ data: projectList });
@@ -62,7 +62,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'projects:*', org.id))) return;
+    if (!(await assertPermission(request, reply, 'projects:write', org.id))) return;
 
     if (await projectService.isProjectSlugTaken(org.id, slug)) {
       return reply.code(400).send({
@@ -108,7 +108,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'flags:read', org.id))) return;
+    if (!(await assertPermission(request, reply, 'projects:read', org.id))) return;
 
     const project = await projectService.findProjectBySlug(org.id, projectSlug);
     if (!project) {
@@ -140,7 +140,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'projects:*', org.id))) return;
+    if (!(await assertPermission(request, reply, 'projects:write', org.id))) return;
 
     const project = await projectService.findProjectBySlug(org.id, projectSlug);
     if (!project) {
@@ -188,7 +188,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'projects:*', org.id))) return;
+    if (!(await assertPermission(request, reply, 'projects:write', org.id))) return;
 
     const project = await projectService.findProjectBySlug(org.id, projectSlug);
     if (!project) {
@@ -237,7 +237,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'flags:read', org.id, project.id))) return;
+    if (!(await assertPermission(request, reply, 'environments:read', org.id, project.id))) return;
 
     const envList = await projectService.listEnvironments(project.id);
     return reply.send({ data: envList });
@@ -270,7 +270,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'environments:*', org.id, project.id))) return;
+    if (!(await assertPermission(request, reply, 'environments:write', org.id, project.id))) return;
 
     const environment = await projectService.createEnvironment(project.id, request.body);
     if (!environment) {
