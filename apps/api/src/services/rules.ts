@@ -2,7 +2,7 @@ import { db } from '../db';
 import { rules } from '../db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { redis } from '../lib/redis';
-import type { CreateRule, UpdateRule } from '@pulse/types';
+import type { CreateRule, UpdateRule } from '@pulse-flags/types';
 
 export async function listRules(flagId: string) {
   return db.query.rules.findMany({

@@ -1,7 +1,7 @@
 {
-  "name": "@pulse/sdk",
-  "version": "0.0.0",
-  "private": true,
+  "name": "@pulse-flags/sdk",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the Pulse feature flag service. Local evaluation, SSE real-time updates, three-tier fallback.",
   "type": "module",
   "exports": {
     ".": {
@@ -13,6 +13,11 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
@@ -20,11 +25,19 @@
     "test:watch": "vitest",
     "lint": "tsc --noEmit"
   },
-  "dependencies": {
-    "@pulse/types": "workspace:*"
-  },
+  "keywords": [
+    "feature-flags",
+    "feature-toggles",
+    "sdk",
+    "typescript",
+    "real-time",
+    "sse"
+  ],
+  "license": "MIT",
+  "dependencies": {},
   "devDependencies": {
-    "@pulse/tsconfig": "workspace:*",
+    "@pulse-flags/tsconfig": "workspace:*",
+    "@pulse-flags/types": "workspace:*",
     "@types/node": "^22.10.2",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",

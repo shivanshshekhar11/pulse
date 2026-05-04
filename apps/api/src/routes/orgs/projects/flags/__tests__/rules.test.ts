@@ -8,7 +8,7 @@ import {
   CreateRuleRouteSchema,
   UpdateRuleRouteSchema,
   ReorderRulesRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import {
   buildApp,
   createTestUser,

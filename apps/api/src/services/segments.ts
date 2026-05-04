@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { segments } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import type { CreateSegment, UpdateSegment } from '@pulse/types';
+import type { CreateSegment, UpdateSegment } from '@pulse-flags/types';
 
 export async function listSegments(orgId: string) {
   return db.query.segments.findMany({

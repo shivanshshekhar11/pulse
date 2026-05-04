@@ -7,7 +7,7 @@ import {
   CreateSegmentRouteSchema,
   GetSegmentRouteSchema,
   UpdateSegmentRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import {
   buildApp,
   createTestUser,

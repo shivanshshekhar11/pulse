@@ -10,7 +10,7 @@ import {
   RefreshRouteSchema,
   LogoutRouteSchema,
   MeRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 
 export default async function authRoutes(fastify: FastifyInstance) {
   const f = fastify.withTypeProvider<ZodTypeProvider>();

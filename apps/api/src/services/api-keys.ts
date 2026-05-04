@@ -2,7 +2,7 @@ import { db } from '../db';
 import { apiKeys, environments } from '../db/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { generateApiKey, sha256 } from '../lib/crypto';
-import type { CreateApiKey } from '@pulse/types';
+import type { CreateApiKey } from '@pulse-flags/types';
 
 export async function listApiKeys(orgId: string) {
   return db.query.apiKeys.findMany({

@@ -1,5 +1,5 @@
 {
-  "extends": "@pulse/tsconfig/api.json",
+  "extends": "@pulse-flags/tsconfig/api.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { GetRulesetRouteSchema } from '@pulse/types';
+import { GetRulesetRouteSchema } from '@pulse-flags/types';
 import { redis } from '../../lib/redis';
 import type { Redis as RedisClient } from 'ioredis';
 import apiKeyPlugin from '../../plugins/api-key';

@@ -5,7 +5,13 @@ import { eq, and, isNull, or, gt } from 'drizzle-orm';
 import { createHash } from 'crypto';
 
 /**
- * Fastify plugin that authenticates SDK requests via the X-Api-Key header.
+ * Fastify plugin that authenticates SDK requests via the X-Api-Key header
+ * or the `?apiKey=` query parameter.
+ *
+ * The query parameter fallback exists specifically for SSE connections:
+ * the browser's native `EventSource` API does not support custom headers,
+ * so the SDK passes the key as a query parameter for `/sdk/v1/stream`.
+ * All other SDK calls use the `X-Api-Key` header.
  *
  * Validates the key against the SHA-256 hash stored in the database.
  * Attaches the resolved key record to `request.apiKey` for downstream handlers.
@@ -15,12 +21,15 @@ import { createHash } from 'crypto';
  */
 export default async function apiKeyPlugin(fastify: FastifyInstance) {
   fastify.addHook('preHandler', async (request, reply) => {
-    const rawKey = request.headers['x-api-key'] as string | undefined;
+    // Header takes precedence; query param is the SSE fallback
+    const rawKey =
+      (request.headers['x-api-key'] as string | undefined) ??
+      (request.query as Record<string, string>)['apiKey'];
     const requestId = request.id;
 
     if (!rawKey) {
       return reply.code(401).send({
-        error: { code: 'UNAUTHORIZED', message: 'Missing X-Api-Key header', requestId },
+        error: { code: 'UNAUTHORIZED', message: 'Missing API key (X-Api-Key header or ?apiKey= query param)', requestId },
       });
     }
 

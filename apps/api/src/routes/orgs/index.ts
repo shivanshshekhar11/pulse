@@ -8,7 +8,7 @@ import {
   InviteMemberRouteSchema,
   UpdateMemberRoleRouteSchema,
   RemoveMemberRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import { assertPermission } from '../../lib/rbac';
 import { writeAuditLog } from '../../lib/audit';
 import * as orgService from '../../services/organizations';

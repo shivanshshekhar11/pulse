@@ -2,7 +2,7 @@ import { db } from '../db';
 import { flags } from '../db/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { redis } from '../lib/redis';
-import type { CreateFlag, UpdateFlag } from '@pulse/types';
+import type { CreateFlag, UpdateFlag } from '@pulse-flags/types';
 
 type FlagType = 'boolean' | 'string' | 'number' | 'json';
 

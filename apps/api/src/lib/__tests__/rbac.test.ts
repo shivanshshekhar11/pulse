@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { hasPermission, resolveRole, ROLE_PERMISSIONS } from '@pulse/types';
-import type { OrgRole, ProjectRole, EffectiveRole } from '@pulse/types';
+import { hasPermission, resolveRole, ROLE_PERMISSIONS } from '@pulse-flags/types';
+import type { OrgRole, ProjectRole, EffectiveRole } from '@pulse-flags/types';
 
 // ── hasPermission ─────────────────────────────────────────────────────────────
 

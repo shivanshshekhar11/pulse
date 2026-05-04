@@ -3,7 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
 import { apiKeys } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
-import { GetRulesetRouteSchema } from '@pulse/types';
+import { GetRulesetRouteSchema } from '@pulse-flags/types';
 import {
   buildApp,
   createTestUser,

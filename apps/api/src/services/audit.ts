@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { auditLogs } from '../db/schema';
 import { eq, and, desc, count } from 'drizzle-orm';
-import type { AuditLogQuery } from '@pulse/types';
+import type { AuditLogQuery } from '@pulse-flags/types';
 
 /**
  * Returns a paginated, filterable list of audit log entries for an org.

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
 import { orgMembers, auditLogs } from '../../../db/schema';
-import { ListAuditLogsRouteSchema } from '@pulse/types';
+import { ListAuditLogsRouteSchema } from '@pulse-flags/types';
 import {
   buildApp,
   createTestUser,

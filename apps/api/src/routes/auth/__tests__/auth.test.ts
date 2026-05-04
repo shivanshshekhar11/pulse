@@ -9,7 +9,7 @@ import {
   RefreshRouteSchema,
   LogoutRouteSchema,
   MeRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import { buildApp, createTestUser, cleanup, uid, parseResponse } from '../../../test/helpers';
 
 describe('Auth Routes', () => {

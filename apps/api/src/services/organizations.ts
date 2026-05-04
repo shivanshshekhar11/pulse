@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { organizations, orgMembers, users } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import type { CreateOrganization, UpdateOrganization, InviteMember, UpdateMemberRole } from '@pulse/types';
+import type { CreateOrganization, UpdateOrganization, InviteMember, UpdateMemberRole } from '@pulse-flags/types';
 
 // ── Orgs ──────────────────────────────────────────────────────────────────────
 

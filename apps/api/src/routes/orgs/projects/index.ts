@@ -8,7 +8,7 @@ import {
   DeleteProjectRouteSchema,
   ListEnvironmentsRouteSchema,
   CreateEnvironmentRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import { assertPermission } from '../../../lib/rbac';
 import { writeAuditLog } from '../../../lib/audit';
 import { findOrgBySlug } from '../../../services/organizations';

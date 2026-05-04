@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { evaluateCondition } from '../evaluator';
-import type { Condition, UserContext } from '@pulse/types';
+import type { Condition, UserContext } from '@pulse-flags/types';
 import type { Segment } from '../types';
 
 describe('evaluateCondition', () => {

@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { environments, flags, segments } from '../db/schema';
 import { eq } from 'drizzle-orm';
-import type { Ruleset } from '@pulse/types';
+import type { Ruleset } from '@pulse-flags/types';
 
 /**
  * Builds the full ruleset payload for a given environment.

@@ -6,7 +6,7 @@ import {
   GetFlagRouteSchema,
   UpdateFlagRouteSchema,
   DeleteFlagRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import { assertPermission } from '../../../../lib/rbac';
 import { writeAuditLog } from '../../../../lib/audit';
 import { resolveEnvironment } from '../../../../lib/resolvers';

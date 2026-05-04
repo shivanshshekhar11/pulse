@@ -1,0 +1,80 @@
+name: Publish SDK to npm
+
+# Manual trigger only — run from the Actions tab.
+# Requires NPM_TOKEN to be set in repository secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g. 0.2.0). Must match packages/sdk/package.json.'
+        required: true
+        type: string
+      tag:
+        description: 'npm dist-tag'
+        required: true
+        default: 'latest'
+        type: choice
+        options:
+          - latest
+          - next
+          - beta
+
+jobs:
+  publish:
+    name: Build, verify, and publish @pulse-flags/sdk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # required for npm provenance
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Guard: fail fast if the version in package.json doesn't match the input.
+      # Prevents accidentally publishing the wrong version.
+      - name: Verify version matches input
+        run: |
+          PKG_VERSION=$(node -p "require('./packages/sdk/package.json').version")
+          if [ "$PKG_VERSION" != "${{ inputs.version }}" ]; then
+            echo "❌ Version mismatch: package.json has $PKG_VERSION but input is ${{ inputs.version }}"
+            echo "Update packages/sdk/package.json before publishing."
+            exit 1
+          fi
+          echo "✅ Version $PKG_VERSION confirmed"
+
+      - name: Build SDK
+        run: pnpm --filter @pulse-flags/sdk build
+
+      - name: Run tests
+        run: pnpm --filter @pulse-flags/sdk test
+
+      - name: Lint
+        run: pnpm --filter @pulse-flags/sdk lint
+
+      # Dry-run first — prints the tarball manifest so you can inspect it in the
+      # Actions log before the real publish step commits to npm.
+      - name: Dry-run publish (inspect tarball)
+        run: pnpm --filter @pulse-flags/sdk publish --dry-run --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        run: pnpm --filter @pulse-flags/sdk publish --no-git-checks --tag ${{ inputs.tag }} --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

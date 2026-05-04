@@ -1,5 +1,5 @@
 {
-  "name": "@pulse/types",
+  "name": "@pulse-flags/types",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@pulse/tsconfig": "workspace:*",
+    "@pulse-flags/tsconfig": "workspace:*",
     "typescript": "^5.7.2"
   }
 }

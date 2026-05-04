@@ -7,7 +7,7 @@ import {
   CreateFlagRouteSchema,
   GetFlagRouteSchema,
   UpdateFlagRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import {
   buildApp,
   createTestUser,

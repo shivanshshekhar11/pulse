@@ -10,7 +10,7 @@ import {
   ListMembersRouteSchema,
   InviteMemberRouteSchema,
   UpdateMemberRoleRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import {
   buildApp,
   createTestUser,

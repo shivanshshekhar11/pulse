@@ -51,7 +51,7 @@ pulse/
 │   ├── example/      # NovaPay demo app
 │   └── docs/         # Fumadocs site
 ├── packages/
-│   ├── sdk/          # @pulse/sdk (npm package)
+│   ├── sdk/          # @pulse-flags/sdk (npm package)
 │   ├── types/        # Shared Zod schemas
 │   ├── ui/           # shadcn/ui components
 │   └── tsconfig/     # Shared TS configs

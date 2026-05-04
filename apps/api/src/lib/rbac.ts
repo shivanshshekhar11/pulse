@@ -2,7 +2,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../db';
 import { orgMembers, projectMembers } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import { hasPermission, resolveRole, type OrgRole, type ProjectRole, type EffectiveRole } from '@pulse/types';
+import { hasPermission, resolveRole, type OrgRole, type ProjectRole, type EffectiveRole } from '@pulse-flags/types';
 
 /**
  * Resolves the effective role for a user within an org, optionally scoped to a project.

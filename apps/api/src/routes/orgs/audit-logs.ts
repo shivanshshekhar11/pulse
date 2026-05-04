@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { ZodTypeProvider } from 'fastify-type-provider-zod';
-import { ListAuditLogsRouteSchema } from '@pulse/types';
+import { ListAuditLogsRouteSchema } from '@pulse-flags/types';
 import { assertPermission } from '../../lib/rbac';
 import { findOrgBySlug } from '../../services/organizations';
 import { listAuditLogs } from '../../services/audit';

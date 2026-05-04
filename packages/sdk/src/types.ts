@@ -1,4 +1,4 @@
-import type { Condition } from '@pulse/types';
+import type { Condition } from '@pulse-flags/types';
 
 /**
  * A reusable user segment with a condition tree.

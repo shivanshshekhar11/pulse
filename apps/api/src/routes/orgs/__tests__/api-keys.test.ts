@@ -5,7 +5,7 @@ import { orgMembers } from '../../../db/schema';
 import {
   ListApiKeysRouteSchema,
   CreateApiKeyRouteSchema,
-} from '@pulse/types';
+} from '@pulse-flags/types';
 import {
   buildApp,
   createTestUser,

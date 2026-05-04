@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { projects, environments } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
-import type { CreateProject, UpdateProject, CreateEnvironment } from '@pulse/types';
+import type { CreateProject, UpdateProject, CreateEnvironment } from '@pulse-flags/types';
 
 // ── Projects ──────────────────────────────────────────────────────────────────
 
