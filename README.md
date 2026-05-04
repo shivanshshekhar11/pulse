@@ -19,7 +19,7 @@ Organization → Project → Environment → Flag → Rules
 ## Tech Stack
 
 - **API:** Fastify + Drizzle ORM + PostgreSQL + Redis
-- **Dashboard:** Next.js 15 + Auth.js + TanStack Query
+- **Dashboard:** Next.js 16 + Auth.js + TanStack Query
 - **SDK:** TypeScript (ESM + CJS) with three-tier fallback
 - **Monorepo:** Turborepo + pnpm workspaces
 
