@@ -46,7 +46,9 @@ export const AuditActionSchema = z.enum([
   'environment.created',
   'environment.updated',
   'environment.deleted',
+  'org.created',
   'org.updated',
+  'org.deleted',
 ]);
 
 export const ResourceTypeSchema = z.enum([

@@ -1,33 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  KeyRound,
-  Plus,
-  Eye,
-  EyeOff,
-  Copy,
-  AlertTriangle,
-  Check,
+  KeyRound, Plus, Eye, EyeOff, Copy, AlertTriangle, Check,
 } from 'lucide-react';
 import {
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
+  Dialog, DialogHeader, DialogBody, DialogFooter,
 } from '~/components/primitives/dialog';
 import {
-  Field,
-  Input,
-  Button,
-  Checkbox,
-  Select,
+  Field, Input, Button, Checkbox, Select,
 } from '~/components/primitives/form';
+import { setStreamKey } from '~/lib/stream-keys';
 
-const ENV_OPTIONS = [
-  { value: 'production', label: 'production' },
-  { value: 'staging', label: 'staging' },
-  { value: 'development', label: 'development' },
+// Fallback shown while real environments are loading
+const FALLBACK_ENV_OPTIONS = [
+  { value: '', label: 'loading environments…' },
 ];
 
 const EXPIRY_OPTIONS = [
@@ -37,35 +24,113 @@ const EXPIRY_OPTIONS = [
   { value: 'never', label: 'never' },
 ];
 
-const GENERATED = 'ps_test_b7e1d04a3f9c1287de91442b80fc7e119cd64a02';
+export interface ApiKeyFormValues {
+  name: string;
+  environmentId: string; // UUID
+  envName: string;
+  scopes: ('read' | 'write')[];
+  expiresAt: Date | null;
+}
 
 export function ApiKeyDialog({
   open,
   onClose,
+  onSubmit,
+  loading,
+  environments,
+  generatedKey,
+  onDismissKey,
 }: {
   open: boolean;
   onClose: () => void;
+  onSubmit?: (values: ApiKeyFormValues) => void;
+  loading?: boolean;
+  environments?: { id: string; name: string; projectSlug?: string }[];
+  generatedKey?: string;
+  onDismissKey?: () => void;
 }) {
   const [step, setStep] = useState<'form' | 'reveal'>('form');
   const [name, setName] = useState('');
-  const [env, setEnv] = useState('staging');
-  const [scopes, setScopes] = useState({ read: true, write: false });
+  const [envId, setEnvId] = useState('');
+  const [scopes, setScopes] = useState<{ read: boolean; write: boolean }>({ read: true, write: false });
   const [expiry, setExpiry] = useState('never');
   const [reveal, setReveal] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleCreate = () => setStep('reveal');
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setStep('form');
+      setName('');
+      setScopes({ read: true, write: false });
+      setExpiry('never');
+      setReveal(false);
+      setCopied(false);
+      // Default to first environment
+      const firstId = environments?.[0]?.id ?? '';
+      setEnvId(firstId);
+    }
+  }, [open, environments]);
+
+  // When environments load after dialog is already open, set default
+  useEffect(() => {
+    if (open && !envId && environments && environments.length > 0) {
+      setEnvId(environments[0]!.id);
+    }
+  }, [environments, open, envId]);
+
+  // Switch to reveal step when key is generated
+  useEffect(() => {
+    if (generatedKey && step === 'form') {
+      setStep('reveal');
+    }
+  }, [generatedKey, step]);
+
+  const envOptions = environments && environments.length > 0
+    ? environments.map((e) => ({
+        value: e.id,
+        label: e.projectSlug ? `${e.projectSlug} / ${e.name}` : e.name,
+      }))
+    : FALLBACK_ENV_OPTIONS;
+
+  const selectedEnv = environments?.find((e) => e.id === envId);
+
+  const handleCreate = () => {
+    if (!name.trim() || (!scopes.read && !scopes.write) || !envId) return;
+    const expiresAt = expiry === 'never' ? null : (() => {
+      const d = new Date();
+      if (expiry === '30d') d.setDate(d.getDate() + 30);
+      else if (expiry === '90d') d.setDate(d.getDate() + 90);
+      else if (expiry === '1y') d.setFullYear(d.getFullYear() + 1);
+      return d;
+    })();
+    const selectedScopes: ('read' | 'write')[] = [
+      ...(scopes.read ? ['read' as const] : []),
+      ...(scopes.write ? ['write' as const] : []),
+    ];
+    const selectedEnv = environments?.find((e) => e.id === envId);
+    onSubmit?.({
+      name: name.trim(),
+      environmentId: envId,
+      envName: selectedEnv?.name ?? '',
+      scopes: selectedScopes,
+      expiresAt,
+    });
+  };
+
   const handleClose = () => {
-    setStep('form');
-    setName('');
-    setReveal(false);
+    onDismissKey?.();
     onClose();
   };
+
   const copyKey = () => {
-    navigator.clipboard?.writeText(GENERATED);
+    if (generatedKey) navigator.clipboard?.writeText(generatedKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
+
+  const canCreate = !!name.trim() && (scopes.read || scopes.write) && !!envId;
+  const displayKey = generatedKey ?? '';
 
   return (
     <Dialog open={open} onClose={handleClose} size="md">
@@ -88,7 +153,13 @@ export function ApiKeyDialog({
             </Field>
 
             <Field label="environment" required>
-              <Select value={env} onChange={setEnv} options={ENV_OPTIONS} />
+              {environments && environments.length > 0 ? (
+                <Select value={envId} onChange={setEnvId} options={envOptions} />
+              ) : (
+                <div className="w-full px-3 py-2 bg-surface-0 border border-border rounded-md text-[13px] text-muted-foreground font-mono">
+                  loading environments…
+                </div>
+              )}
             </Field>
 
             <Field label="scopes" required>
@@ -109,24 +180,18 @@ export function ApiKeyDialog({
             </Field>
 
             <Field label="expiry">
-              <Select
-                value={expiry}
-                onChange={setExpiry}
-                options={EXPIRY_OPTIONS}
-              />
+              <Select value={expiry} onChange={setExpiry} options={EXPIRY_OPTIONS} />
             </Field>
           </DialogBody>
           <DialogFooter hint="key format: ps_(live|test)_<40 hex chars> · stored as SHA-256">
-            <Button variant="ghost" onClick={handleClose}>
-              cancel
-            </Button>
+            <Button variant="ghost" onClick={handleClose}>cancel</Button>
             <Button
               variant="primary"
               icon={Plus}
-              disabled={!name || (!scopes.read && !scopes.write)}
+              disabled={!canCreate || loading || !environments || environments.length === 0}
               onClick={handleCreate}
             >
-              generate
+              {loading ? 'generating…' : 'generate'}
             </Button>
           </DialogFooter>
         </>
@@ -143,17 +208,13 @@ export function ApiKeyDialog({
             <div className="rounded-md border border-warning/40 bg-warning/5 p-3.5 flex items-start gap-2.5">
               <AlertTriangle className="size-4 text-warning shrink-0 mt-0.5" />
               <div className="text-[12.5px] text-muted-foreground">
-                If you lose this key, you must revoke it and generate a new one.
-                There is no way to recover it.
+                If you lose this key, you must revoke it and generate a new one. There is no way to recover it.
               </div>
             </div>
-
             <div className="rounded-md border border-border bg-surface-0 p-3 flex items-center gap-2 font-mono text-[12.5px]">
               <KeyRound className="size-3.5 text-warning shrink-0" />
               <span className="flex-1 truncate">
-                {reveal
-                  ? GENERATED
-                  : GENERATED.slice(0, 12) + '•'.repeat(40)}
+                {reveal ? displayKey : displayKey.slice(0, 12) + '•'.repeat(40)}
               </span>
               <button
                 type="button"
@@ -161,37 +222,37 @@ export function ApiKeyDialog({
                 className="size-7 grid place-items-center rounded border border-border bg-surface-1 text-muted-foreground hover:text-foreground"
                 aria-label={reveal ? 'Hide key' : 'Reveal key'}
               >
-                {reveal ? (
-                  <EyeOff className="size-3.5" />
-                ) : (
-                  <Eye className="size-3.5" />
-                )}
+                {reveal ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
               </button>
               <button
                 type="button"
                 onClick={copyKey}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-border bg-surface-1 text-muted-foreground hover:text-foreground text-[11.5px]"
               >
-                {copied ? (
-                  <Check className="size-3.5 text-primary" />
-                ) : (
-                  <Copy className="size-3.5" />
-                )}
+                {copied ? <Check className="size-3.5 text-primary" /> : <Copy className="size-3.5" />}
                 {copied ? 'copied' : 'copy'}
               </button>
             </div>
-
             <pre className="font-mono text-[11.5px] p-3 rounded-md bg-surface-0 border border-border text-muted-foreground">
-              <span className="text-dim">// usage</span>
-              {'\n'}
-              export PULSE_API_KEY=
-              {reveal ? GENERATED.slice(0, 18) + '...' : 'ps_test_...'}
+              <span className="text-dim">// usage</span>{'\n'}
+              export PULSE_API_KEY={reveal ? displayKey.slice(0, 18) + '...' : 'ps_test_...'}
             </pre>
+            {selectedEnv && generatedKey && (
+              <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-0 px-3 py-2">
+                <div className="text-[11.5px] text-muted-foreground">
+                  use this key for live updates (memory only)
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => setStreamKey(selectedEnv.id, generatedKey, selectedEnv.name)}
+                >
+                  use key
+                </Button>
+              </div>
+            )}
           </DialogBody>
           <DialogFooter>
-            <Button variant="primary" onClick={handleClose}>
-              I&apos;ve saved it — close
-            </Button>
+            <Button variant="primary" onClick={handleClose}>I&apos;ve saved it — close</Button>
           </DialogFooter>
         </>
       )}

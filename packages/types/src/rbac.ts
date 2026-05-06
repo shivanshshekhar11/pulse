@@ -16,7 +16,7 @@ export type EffectiveRole = OrgRole | ProjectRole;
 // The special `*` grants everything (owner only).
 //
 // Resources and their actions:
-//   org          — read, update
+//   org          — read, update, delete
 //   members      — read, invite, update, remove
 //   projects     — read, write  (write = create / update / delete)
 //   environments — read, write
@@ -32,6 +32,7 @@ export type EffectiveRole = OrgRole | ProjectRole;
 //   ─────────────────── ─────  ─────  ──────  ──────  ──────
 //   org:read              ✓      ✓      ✓       ✓       ✓
 //   org:update            ✓      ✓
+//   org:delete            ✓
 //   members:read          ✓      ✓      ✓       ✓       ✓
 //   members:invite        ✓      ✓
 //   members:update        ✓      ✓

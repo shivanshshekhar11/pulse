@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Mail, Crown, Shield, User as UserIcon, Eye, MoreHorizontal } from 'lucide-react';
+import { Plus, Crown, Shield, User as UserIcon, Eye, MoreHorizontal, Loader2 } from 'lucide-react';
 import { PageHeader } from '~/components/ui/page-header';
 import { InviteMemberDialog, ChangeRoleDialog } from '~/components/dialogs/member-dialogs';
 import { ConfirmDialog } from '~/components/dialogs/confirm';
+import { useMembers, useRemoveMember, useInviteMember, useUpdateMemberRole } from '~/lib/hooks/use-org';
+import type { OrgMemberResponse } from '@pulse-flags/types';
 
 type Role = 'owner' | 'admin' | 'member' | 'viewer';
 
@@ -15,37 +17,27 @@ const ROLE_INFO: Record<Role, { icon: React.ComponentType<{ className?: string }
   viewer: { icon: Eye, color: 'text-muted-foreground bg-surface-2 border-border', label: 'viewer', perms: 'Read-only access to flags, rules, and segments.' },
 };
 
-const MEMBERS = [
-  { name: 'Jordan Park', email: 'jordan.p@acme.com', role: 'owner' as Role, projects: ['all'], joined: 'Mar 02, 2026', lastActive: 'active now', initials: 'jp', gradient: 'from-magenta/40 to-info/40' },
-  { name: 'Mira Kowalski', email: 'mira.k@acme.com', role: 'admin' as Role, projects: ['novapay', 'lighthouse'], joined: 'Mar 14, 2026', lastActive: '12m ago', initials: 'mk', gradient: 'from-primary/40 to-info/40' },
-  { name: 'Sai Ramaswamy', email: 'sai.r@acme.com', role: 'admin' as Role, projects: ['novapay'], joined: 'Mar 22, 2026', lastActive: '2h ago', initials: 'sr', gradient: 'from-warning/40 to-magenta/40' },
-  { name: 'Lena Faulk', email: 'lena.f@acme.com', role: 'member' as Role, projects: ['novapay'], joined: 'Apr 01, 2026', lastActive: 'yesterday', initials: 'lf', gradient: 'from-info/40 to-primary/40' },
-  { name: 'Dev Patel', email: 'dev.p@acme.com', role: 'member' as Role, projects: ['lighthouse'], joined: 'Apr 11, 2026', lastActive: 'Apr 30', initials: 'dp', gradient: 'from-magenta/40 to-warning/40' },
-  { name: 'Riya Banerjee', email: 'riya.b@acme.com', role: 'viewer' as Role, projects: ['all'], joined: 'Apr 18, 2026', lastActive: 'Apr 22', initials: 'rb', gradient: 'from-info/40 to-magenta/40' },
-];
+function initials(name: string | null | undefined, email: string): string {
+  if (name) return name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+  return email.slice(0, 2).toUpperCase();
+}
 
-const PENDING = [
-  { email: 'alex.t@acme.com', role: 'member' as Role, invitedBy: 'jordan.p', at: '2h ago' },
-  { email: 'noor.h@partner.io', role: 'viewer' as Role, invitedBy: 'mira.k', at: 'yesterday' },
-];
+const GRADIENTS = ['from-magenta/40 to-info/40', 'from-primary/40 to-info/40', 'from-warning/40 to-magenta/40', 'from-info/40 to-primary/40', 'from-magenta/40 to-warning/40'];
 
 export function MembersPage({ orgSlug }: { orgSlug: string }) {
+  const { data: members, isLoading } = useMembers(orgSlug);
+  const removeMember = useRemoveMember(orgSlug);
+  const inviteMember = useInviteMember(orgSlug);
+  const updateMemberRole = useUpdateMemberRole(orgSlug);
+
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [roleTarget, setRoleTarget] = useState<(typeof MEMBERS)[0] | null>(null);
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+  const [roleTarget, setRoleTarget] = useState<OrgMemberResponse | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<OrgMemberResponse | null>(null);
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <PageHeader
-        crumb={`${orgSlug} / members`}
-        title="members"
-        command="pulse members list --org=acme-corp"
-      >
-        <button
-          type="button"
-          onClick={() => setInviteOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90"
-        >
+      <PageHeader crumb={`${orgSlug} / members`} title="members" command="pulse members list --org=acme-corp">
+        <button type="button" onClick={() => setInviteOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90">
           <Plus className="size-3.5" strokeWidth={2.5} /> invite member
         </button>
       </PageHeader>
@@ -61,8 +53,7 @@ export function MembersPage({ orgSlug }: { orgSlug: string }) {
                 <div key={r} className="rounded-md border border-border bg-surface-1 p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-mono text-[10.5px] border ${info.color}`}>
-                      <Icon className="size-3" />
-                      {info.label}
+                      <Icon className="size-3" />{info.label}
                     </span>
                   </div>
                   <p className="text-[12px] text-muted-foreground leading-relaxed">{info.perms}</p>
@@ -71,110 +62,95 @@ export function MembersPage({ orgSlug }: { orgSlug: string }) {
             })}
           </div>
 
-          {/* Pending invites */}
-          {PENDING.length > 0 && (
-            <section>
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">// pending invites</h4>
-                <span className="font-mono text-[11.5px] text-muted-foreground">{PENDING.length} pending</span>
-              </div>
-              <div className="rounded-md border border-border bg-surface-1 overflow-hidden">
-                {PENDING.map((p) => (
-                  <div key={p.email} className="grid grid-cols-[1fr_180px_180px_120px] gap-4 px-5 py-3.5 items-center border-b border-border last:border-b-0">
-                    <div className="flex items-center gap-3">
-                      <Mail className="size-4 text-warning" />
-                      <span className="font-mono text-[13px]">{p.email}</span>
-                    </div>
-                    <RoleBadge role={p.role} />
-                    <span className="font-mono text-[12px] text-muted-foreground">invited by {p.invitedBy} · {p.at}</span>
-                    <div className="flex items-center gap-1.5 justify-end">
-                      <button type="button" className="font-mono text-[11.5px] px-2.5 py-1.5 rounded border border-border bg-surface-2 text-muted-foreground hover:text-foreground">resend</button>
-                      <button type="button" className="font-mono text-[11.5px] px-2.5 py-1.5 rounded border border-border bg-surface-2 text-destructive hover:bg-destructive/10">revoke</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Members table */}
           <section>
             <div className="flex items-center justify-between mb-3">
-              <h4 className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">// members ({MEMBERS.length})</h4>
+              <h4 className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim">
+                // members {members ? `(${members.length})` : ''}
+              </h4>
             </div>
-            <div className="rounded-md border border-border bg-surface-1 overflow-hidden">
-              <div className="grid grid-cols-[1fr_140px_180px_140px_60px] gap-4 px-5 py-3 border-b border-border bg-surface-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
-                <div>user</div>
-                <div>org role</div>
-                <div>project access</div>
-                <div>last active</div>
-                <div />
+
+            {isLoading ? (
+              <div className="flex items-center justify-center py-16 text-muted-foreground">
+                <Loader2 className="size-5 animate-spin mr-2" />
+                <span className="font-mono text-[12px]">loading members…</span>
               </div>
-              {MEMBERS.map((m) => (
-                <div key={m.email} className="grid grid-cols-[1fr_140px_180px_140px_60px] gap-4 px-5 py-4 items-center border-b border-border last:border-b-0 hover:bg-surface-2/40">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`size-9 rounded-md bg-gradient-to-br ${m.gradient} border border-border grid place-items-center font-mono text-[12px] uppercase`}>
-                      {m.initials}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[13.5px] truncate">{m.name}</div>
-                      <div className="font-mono text-[11.5px] text-muted-foreground truncate">{m.email}</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setRoleTarget(m)}
-                    className="w-fit hover:opacity-80 transition-opacity"
-                  >
-                    <RoleBadge role={m.role} />
-                  </button>
-                  <div className="flex flex-wrap items-center gap-1">
-                    {m.projects.map((p) => (
-                      <span key={p} className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-surface-2 text-muted-foreground border border-border">{p}</span>
-                    ))}
-                  </div>
-                  <span className="font-mono text-[11.5px] text-muted-foreground">{m.lastActive}</span>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setRemoveTarget(m.name)}
-                      className="size-7 grid place-items-center rounded border border-transparent hover:border-border hover:bg-surface-2 text-dim hover:text-foreground"
-                    >
-                      <MoreHorizontal className="size-3.5" />
-                    </button>
-                  </div>
+            ) : (
+              <div className="rounded-md border border-border bg-surface-1 overflow-hidden">
+                <div className="grid grid-cols-[1fr_140px_140px_60px] gap-4 px-5 py-3 border-b border-border bg-surface-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
+                  <div>user</div>
+                  <div>org role</div>
+                  <div>joined</div>
+                  <div />
                 </div>
-              ))}
-            </div>
+                {(members ?? []).map((m, idx) => {
+                  const role = m.role as Role;
+                  const info = ROLE_INFO[role] ?? ROLE_INFO.viewer;
+                  const Icon = info.icon;
+                  const grad = GRADIENTS[idx % GRADIENTS.length] ?? GRADIENTS[0];
+                  return (
+                    <div key={m.id} className="grid grid-cols-[1fr_140px_140px_60px] gap-4 px-5 py-4 items-center border-b border-border last:border-b-0 hover:bg-surface-2/40">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`size-9 rounded-md bg-gradient-to-br ${grad} border border-border grid place-items-center font-mono text-[12px] uppercase`}>
+                          {initials(m.user.name, m.user.email)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[13.5px] truncate">{m.user.name ?? m.user.email}</div>
+                          <div className="font-mono text-[11.5px] text-muted-foreground truncate">{m.user.email}</div>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setRoleTarget(m)} className="w-fit hover:opacity-80 transition-opacity">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[11px] border w-fit ${info.color}`}>
+                          <Icon className="size-3" />{info.label}
+                        </span>
+                      </button>
+                      <span className="font-mono text-[11.5px] text-muted-foreground">
+                        {new Date(m.joinedAt as string | Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      <div className="flex justify-end">
+                        <button type="button" onClick={() => setRemoveTarget(m)} className="size-7 grid place-items-center rounded border border-transparent hover:border-border hover:bg-surface-2 text-dim hover:text-foreground">
+                          <MoreHorizontal className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         </div>
       </div>
 
-      <InviteMemberDialog open={inviteOpen} onClose={() => setInviteOpen(false)} />
+      <InviteMemberDialog
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        loading={inviteMember.isPending}
+        onSubmit={(values) => {
+          inviteMember.mutate(values, { onSuccess: () => setInviteOpen(false) });
+        }}
+      />
       <ChangeRoleDialog
         open={roleTarget !== null}
         onClose={() => setRoleTarget(null)}
-        member={roleTarget ?? undefined}
+        loading={updateMemberRole.isPending}
+        member={roleTarget ? { name: roleTarget.user.name ?? roleTarget.user.email, email: roleTarget.user.email, role: roleTarget.role as Role } : undefined}
+        onSubmit={(values) => {
+          if (!roleTarget) return;
+          updateMemberRole.mutate(
+            { userId: roleTarget.user.id, body: { role: values.role } },
+            { onSuccess: () => setRoleTarget(null) },
+          );
+        }}
       />
       <ConfirmDialog
         open={removeTarget !== null}
         onClose={() => setRemoveTarget(null)}
-        title={`Remove ${removeTarget}`}
+        title={`Remove ${removeTarget?.user.name ?? removeTarget?.user.email}`}
         description="This member will lose access to all projects in this organization."
         confirmLabel="remove member"
         variant="warning"
+        onConfirm={() => removeTarget && removeMember.mutate(removeTarget.user.id)}
       />
     </main>
-  );
-}
-
-function RoleBadge({ role }: { role: Role }) {
-  const info = ROLE_INFO[role];
-  const Icon = info.icon;
-  return (
-    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[11px] border w-fit ${info.color}`}>
-      <Icon className="size-3" />
-      {info.label}
-    </span>
   );
 }

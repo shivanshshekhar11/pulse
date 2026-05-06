@@ -115,6 +115,15 @@ export const UpdateOrgRouteSchema = {
   },
 } as const;
 
+export const DeleteOrgRouteSchema = {
+  params: OrgSlugParamsSchema,
+  response: {
+    204: z.null(),
+    403: ErrorResponseSchema,
+    404: ErrorResponseSchema,
+  },
+} as const;
+
 export const ListMembersRouteSchema = {
   params: OrgSlugParamsSchema,
   response: {

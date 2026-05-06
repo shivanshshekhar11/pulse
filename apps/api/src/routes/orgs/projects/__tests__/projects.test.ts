@@ -110,6 +110,39 @@ describe('Project & Environment Routes', () => {
       expect(body.data.orgId).toBe(orgId);
     });
 
+    it('creates environments when provided', async () => {
+      const slug = `env-proj-${uid()}`;
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/orgs/${orgSlug}/projects`,
+        headers: { authorization: `Bearer ${owner.token}` },
+        payload: {
+          slug,
+          name: 'Env Project',
+          environments: [
+            { name: 'production', color: '#ef4444', isDefault: true },
+            { name: 'staging', color: '#f59e0b' },
+            { name: 'development', color: '#10b981' },
+          ],
+        },
+      });
+
+      expect(res.statusCode).toBe(201);
+      const body = parseResponse(CreateProjectRouteSchema.response[201], res.body);
+
+      const envRes = await app.inject({
+        method: 'GET',
+        url: `/api/v1/orgs/${orgSlug}/projects/${body.data.slug}/environments`,
+        headers: { authorization: `Bearer ${owner.token}` },
+      });
+
+      expect(envRes.statusCode).toBe(200);
+      const envBody = parseResponse(ListEnvironmentsRouteSchema.response[200], envRes.body);
+      expect(envBody.data).toHaveLength(3);
+      expect(envBody.data.filter((env) => env.isDefault)).toHaveLength(1);
+      expect(envBody.data.find((env) => env.name === 'production')?.isDefault).toBe(true);
+    });
+
     it('admin can create a project', async () => {
       const res = await app.inject({
         method: 'POST',
@@ -448,6 +481,26 @@ describe('Project & Environment Routes', () => {
         payload: { name: 'dev' },
       });
       expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 400 once environment limit is reached', async () => {
+      const project = await createTestProject(orgId);
+      await createTestEnvironment(project.id, { name: 'one' });
+      await createTestEnvironment(project.id, { name: 'two' });
+      await createTestEnvironment(project.id, { name: 'three' });
+      await createTestEnvironment(project.id, { name: 'four' });
+      await createTestEnvironment(project.id, { name: 'five' });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/orgs/${orgSlug}/projects/${project.slug}/environments`,
+        headers: { authorization: `Bearer ${owner.token}` },
+        payload: { name: 'six' },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = parseResponse(CreateEnvironmentRouteSchema.response[400], res.body);
+      expect(body.error.code).toBe('ENV_LIMIT_REACHED');
     });
   });
 });

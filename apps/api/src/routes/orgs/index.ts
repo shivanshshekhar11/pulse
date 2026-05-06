@@ -4,6 +4,7 @@ import {
   CreateOrgRouteSchema,
   GetOrgRouteSchema,
   UpdateOrgRouteSchema,
+  DeleteOrgRouteSchema,
   ListMembersRouteSchema,
   InviteMemberRouteSchema,
   UpdateMemberRoleRouteSchema,
@@ -46,7 +47,7 @@ export default async function orgRoutes(fastify: FastifyInstance) {
     await writeAuditLog({
       orgId: org.id,
       actorId: userId,
-      action: 'org.updated',
+      action: 'org.created',
       resourceType: 'org',
       resourceId: org.id,
       newValue: org,
@@ -120,6 +121,43 @@ export default async function orgRoutes(fastify: FastifyInstance) {
     });
 
     return reply.send({ data: updated });
+  });
+
+  // DELETE /api/v1/orgs/:orgSlug
+  f.delete('/:orgSlug', {
+    onRequest: [fastify.authenticate],
+    schema: {
+      params: DeleteOrgRouteSchema.params,
+      response: DeleteOrgRouteSchema.response,
+    },
+  }, async (request, reply) => {
+    const requestId = request.id;
+    const { userId } = request.user;
+    const { orgSlug } = request.params;
+
+    const org = await orgService.findOrgBySlug(orgSlug);
+    if (!org) {
+      return reply.code(404).send({
+        error: { code: 'NOT_FOUND', message: 'Organization not found', requestId },
+      });
+    }
+
+    if (!(await assertPermission(request, reply, 'org:delete', org.id))) return;
+
+    // Audit logs reference orgId with cascading deletes, so write before deletion.
+    await writeAuditLog({
+      orgId: org.id,
+      actorId: userId,
+      action: 'org.deleted',
+      resourceType: 'org',
+      resourceId: org.id,
+      oldValue: org,
+      ip: request.ip,
+    });
+
+    await orgService.deleteOrg(org.id);
+
+    return reply.code(204).send(null);
   });
 
   // GET /api/v1/orgs/:orgSlug/members

@@ -53,7 +53,7 @@ export default async function projectRoutes(fastify: FastifyInstance) {
     const requestId = request.id;
     const { userId } = request.user;
     const { orgSlug } = request.params;
-    const { slug, name } = request.body;
+    const { slug, name, environments } = request.body;
 
     const org = await findOrgBySlug(orgSlug);
     if (!org) {
@@ -70,11 +70,21 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const project = await projectService.createProject(org.id, { slug, name });
+    const project = await projectService.createProject(org.id, { slug, name, environments });
     if (!project) {
       return reply.code(500).send({
         error: { code: 'CREATE_FAILED', message: 'Failed to create project', requestId },
       });
+    }
+
+    if (environments?.length) {
+      const hasDefault = environments.some((env) => env.isDefault);
+      const normalized = environments.map((env, index) => ({
+        ...env,
+        isDefault: hasDefault ? (env.isDefault ?? false) : index === 0,
+      }));
+
+      await projectService.createEnvironments(project.id, normalized);
     }
 
     await writeAuditLog({
@@ -272,7 +282,30 @@ export default async function projectRoutes(fastify: FastifyInstance) {
 
     if (!(await assertPermission(request, reply, 'environments:write', org.id, project.id))) return;
 
-    const environment = await projectService.createEnvironment(project.id, request.body);
+    const existingCount = await projectService.countEnvironments(project.id);
+    if (existingCount >= 5) {
+      return reply.code(400).send({
+        error: { code: 'ENV_LIMIT_REACHED', message: 'Projects can have up to 5 environments', requestId },
+      });
+    }
+
+    const existingByName = await projectService.findEnvironmentByName(project.id, request.body.name);
+    if (existingByName) {
+      return reply.code(400).send({
+        error: { code: 'ENVIRONMENT_EXISTS', message: 'Environment name already exists', requestId },
+      });
+    }
+
+    const existingDefault = await projectService.findDefaultEnvironment(project.id);
+    const shouldBeDefault = request.body.isDefault ?? !existingDefault;
+    if (shouldBeDefault && existingDefault) {
+      await projectService.clearDefaultEnvironments(project.id);
+    }
+
+    const environment = await projectService.createEnvironment(project.id, {
+      ...request.body,
+      isDefault: shouldBeDefault,
+    });
     if (!environment) {
       return reply.code(500).send({
         error: { code: 'CREATE_FAILED', message: 'Failed to create environment', requestId },

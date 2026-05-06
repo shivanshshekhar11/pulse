@@ -1,22 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Plus, Save } from 'lucide-react';
 import {
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
+  Dialog, DialogHeader, DialogBody, DialogFooter,
 } from '~/components/primitives/dialog';
+import { Field, Input, Textarea, Button } from '~/components/primitives/form';
+import type { Condition, Operator } from '@pulse-flags/types';
 import {
-  Field,
-  Input,
-  Textarea,
-  Button,
-  Select,
-} from '~/components/primitives/form';
+  ConditionBuilder,
+  isConditionNodeValid,
+  makeDefaultConditionNode,
+  nodeToCondition,
+  wrapConditionRoot,
+} from '~/components/primitives/condition-builder';
+import type { ConditionGroup } from '~/components/primitives/condition-builder';
 
-const OPERATORS = [
+const OPERATORS: { value: Operator; label: string }[] = [
   { value: 'eq', label: 'equals' },
   { value: 'neq', label: 'not equals' },
   { value: 'in', label: 'in' },
@@ -26,36 +26,68 @@ const OPERATORS = [
   { value: 'ends_with', label: 'ends with' },
   { value: 'regex', label: 'matches regex' },
   { value: 'gt', label: '>' },
+  { value: 'gte', label: '>=' },
   { value: 'lt', label: '<' },
+  { value: 'lte', label: '<=' },
 ];
 
-type Cond = { id: string; attr: string; op: string; val: string };
+export interface SegmentFormValues {
+  name: string;
+  description?: string;
+  conditions: Condition;
+}
+
+export interface SegmentInitial {
+  name?: string;
+  description?: string | null;
+  conditions?: unknown;
+}
 
 export function SegmentDialog({
   open,
   onClose,
+  onSubmit,
   mode = 'create',
+  loading,
+  initial,
 }: {
   open: boolean;
   onClose: () => void;
+  onSubmit?: (values: SegmentFormValues) => void;
   mode?: 'create' | 'edit';
+  loading?: boolean;
+  initial?: SegmentInitial;
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [match, setMatch] = useState<'AND' | 'OR'>('AND');
-  const [conds, setConds] = useState<Cond[]>([
-    { id: '1', attr: 'country', op: 'in', val: '["US","CA","UK"]' },
-  ]);
+  const defaultOp = useMemo(() => OPERATORS[0]?.value ?? 'eq', []);
+  const [conditions, setConditions] = useState<ConditionGroup>(() =>
+    makeDefaultConditionNode(defaultOp),
+  );
 
-  const addCond = () =>
-    setConds([
-      ...conds,
-      { id: String(Date.now()), attr: '', op: 'eq', val: '' },
-    ]);
-  const removeCond = (id: string) =>
-    setConds(conds.filter((c) => c.id !== id));
-  const updateCond = (id: string, patch: Partial<Cond>) =>
-    setConds(conds.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+  // Reset / pre-populate when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    setName(initial?.name ?? '');
+    setDescription(initial?.description ?? '');
+    if (initial?.conditions) {
+      setConditions(wrapConditionRoot(initial.conditions as Condition, defaultOp));
+    } else {
+      setConditions(makeDefaultConditionNode(defaultOp));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultOp, initial]);
+
+  const canSubmit = !!name && isConditionNodeValid(conditions);
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    onSubmit?.({
+      name,
+      description: description || undefined,
+      conditions: nodeToCondition(conditions),
+    });
+  };
 
   return (
     <Dialog open={open} onClose={onClose} size="lg">
@@ -66,34 +98,13 @@ export function SegmentDialog({
         onClose={onClose}
       />
       <DialogBody className="space-y-5">
-        <div className="grid grid-cols-[1fr_220px] gap-4">
+        <div className="grid grid-cols-[1fr] gap-4">
           <Field label="name" required>
-            <Input
-              mono
-              autoFocus
-              placeholder="Internal_Beta"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </Field>
-          <Field label="match strategy">
-            <Select
-              value={match}
-              onChange={(v) => setMatch(v as 'AND' | 'OR')}
-              options={[
-                { value: 'AND', label: 'AND — all must match' },
-                { value: 'OR', label: 'OR — any may match' },
-              ]}
-            />
+            <Input mono autoFocus placeholder="Internal_Beta" value={name} onChange={(e) => setName(e.target.value)} />
           </Field>
         </div>
-
         <Field label="description" hint="optional">
-          <Textarea
-            placeholder="Acme employees and trusted external testers"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <Textarea placeholder="Acme employees and trusted external testers" value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
 
         <div>
@@ -101,69 +112,19 @@ export function SegmentDialog({
             <label className="font-mono text-[11px] uppercase tracking-[0.15em] text-muted-foreground">
               conditions <span className="text-destructive">*</span>
             </label>
-            <Button size="sm" variant="ghost" icon={Plus} onClick={addCond}>
-              add condition
-            </Button>
+            <span className="text-[11px] text-dim">drag to reorder</span>
           </div>
-          <div className="space-y-2">
-            {conds.map((c, i) => (
-              <div key={c.id} className="flex items-center gap-2">
-                <span
-                  className={`font-mono text-[10px] px-1.5 py-1 rounded border w-12 text-center shrink-0 ${
-                    i === 0
-                      ? 'border-dim text-dim'
-                      : match === 'AND'
-                        ? 'border-primary/40 text-primary bg-primary/10'
-                        : 'border-magenta/40 text-magenta bg-magenta/10'
-                  }`}
-                >
-                  {i === 0 ? 'if' : match}
-                </span>
-                <Input
-                  mono
-                  placeholder="attribute"
-                  value={c.attr}
-                  onChange={(e) => updateCond(c.id, { attr: e.target.value })}
-                  className="flex-1"
-                />
-                <Select
-                  className="w-32"
-                  value={c.op}
-                  onChange={(v) => updateCond(c.id, { op: v })}
-                  options={OPERATORS}
-                />
-                <Input
-                  mono
-                  placeholder="value"
-                  value={c.val}
-                  onChange={(e) => updateCond(c.id, { val: e.target.value })}
-                  className="flex-1"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeCond(c.id)}
-                  disabled={conds.length === 1}
-                  className="size-8 grid place-items-center rounded border border-border bg-surface-2 text-destructive hover:bg-destructive/10 shrink-0 disabled:opacity-40"
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
+          <ConditionBuilder
+            root={conditions}
+            onChange={setConditions}
+            operators={OPERATORS}
+          />
         </div>
       </DialogBody>
-      <DialogFooter
-        hint={`${conds.length} condition${conds.length !== 1 ? 's' : ''} · ${match} match`}
-      >
-        <Button variant="ghost" onClick={onClose}>
-          cancel
-        </Button>
-        <Button
-          variant="primary"
-          icon={mode === 'create' ? Plus : Save}
-          onClick={onClose}
-        >
-          {mode === 'create' ? 'create segment' : 'save changes'}
+      <DialogFooter hint="segment conditions">
+        <Button variant="ghost" onClick={onClose}>cancel</Button>
+        <Button variant="primary" icon={mode === 'create' ? Plus : Save} disabled={!canSubmit || loading} onClick={handleSubmit}>
+          {loading ? 'saving…' : mode === 'create' ? 'create segment' : 'save changes'}
         </Button>
       </DialogFooter>
     </Dialog>

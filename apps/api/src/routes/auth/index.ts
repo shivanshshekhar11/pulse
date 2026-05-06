@@ -10,6 +10,9 @@ import {
   RefreshRouteSchema,
   LogoutRouteSchema,
   MeRouteSchema,
+  ListUserOrgsRouteSchema,
+  UpdateUserRouteSchema,
+  ChangePasswordRouteSchema,
 } from '@pulse-flags/types';
 
 export default async function authRoutes(fastify: FastifyInstance) {
@@ -205,5 +208,117 @@ export default async function authRoutes(fastify: FastifyInstance) {
     return reply.send({
       data: { id: user.id, email: user.email, name: user.name, avatarUrl: user.avatarUrl },
     });
+  });
+
+  // PATCH /api/v1/auth/me
+  f.patch('/me', {
+    onRequest: [fastify.authenticate],
+    schema: {
+      body: UpdateUserRouteSchema.body,
+      response: UpdateUserRouteSchema.response,
+    },
+  }, async (request, reply) => {
+    const requestId = request.id;
+    const { userId } = request.user;
+
+    const updates: Partial<typeof users.$inferInsert> = {};
+    if (request.body.email !== undefined) updates.email = request.body.email;
+    if (request.body.name !== undefined) updates.name = request.body.name ?? null;
+    if (request.body.avatarUrl !== undefined) updates.avatarUrl = request.body.avatarUrl ?? null;
+
+    if (!Object.keys(updates).length) {
+      return reply.code(400).send({
+        error: { code: 'NO_UPDATES', message: 'No profile fields provided', requestId },
+      });
+    }
+
+    if (updates.email) {
+      const existing = await db.query.users.findFirst({
+        where: eq(users.email, updates.email),
+      });
+      if (existing && existing.id !== userId) {
+        return reply.code(409).send({
+          error: { code: 'EMAIL_TAKEN', message: 'Email is already in use', requestId },
+        });
+      }
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, userId))
+      .returning();
+
+    if (!updated) {
+      return reply.code(404).send({
+        error: { code: 'USER_NOT_FOUND', message: 'User not found', requestId },
+      });
+    }
+
+    return reply.send({
+      data: {
+        id: updated.id,
+        email: updated.email,
+        name: updated.name,
+        avatarUrl: updated.avatarUrl,
+      },
+    });
+  });
+
+  // POST /api/v1/auth/me/password
+  f.post('/me/password', {
+    onRequest: [fastify.authenticate],
+    schema: {
+      body: ChangePasswordRouteSchema.body,
+      response: ChangePasswordRouteSchema.response,
+    },
+  }, async (request, reply) => {
+    const requestId = request.id;
+    const { userId } = request.user;
+    const { currentPassword, newPassword } = request.body;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user || !user.passwordHash) {
+      return reply.code(404).send({
+        error: { code: 'USER_NOT_FOUND', message: 'User not found', requestId },
+      });
+    }
+
+    const valid = await verifyPassword(currentPassword, user.passwordHash);
+    if (!valid) {
+      return reply.code(401).send({
+        error: { code: 'INVALID_CREDENTIALS', message: 'Current password is incorrect', requestId },
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return reply.code(400).send({
+        error: { code: 'PASSWORD_REUSED', message: 'New password must be different', requestId },
+      });
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, userId));
+    await db.update(refreshTokens).set({ revokedAt: new Date() }).where(eq(refreshTokens.userId, userId));
+
+    return reply.send({ data: { message: 'Password updated successfully' } });
+  });
+
+  // GET /api/v1/auth/me/orgs
+  // Returns all organizations the authenticated user belongs to.
+  // Used by the dashboard to redirect to the user's first org after login.
+  f.get('/me/orgs', {
+    onRequest: [fastify.authenticate],
+    schema: {
+      response: ListUserOrgsRouteSchema.response,
+    },
+  }, async (request, reply) => {
+    const { userId } = request.user;
+    const { listUserOrgs } = await import('../../services/organizations');
+    const orgs = await listUserOrgs(userId);
+    return reply.send({ data: orgs });
   });
 }

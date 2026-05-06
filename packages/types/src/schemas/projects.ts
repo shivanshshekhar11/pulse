@@ -35,6 +35,15 @@ export const SelectEnvironmentSchema = z.object({
 // Request schemas
 // ============================================================================
 
+export const CreateEnvironmentSchema = z.object({
+  name: z.string().min(1).max(64),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'Color must be a valid hex color')
+    .optional(),
+  isDefault: z.boolean().optional(),
+});
+
 export const CreateProjectSchema = z.object({
   slug: z
     .string()
@@ -42,6 +51,33 @@ export const CreateProjectSchema = z.object({
     .max(64)
     .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
   name: z.string().min(1).max(128),
+  environments: z
+    .array(CreateEnvironmentSchema)
+    .min(1)
+    .max(5)
+    .superRefine((envs, ctx) => {
+      const seen = new Set<string>();
+      for (const env of envs) {
+        const normalized = env.name.trim().toLowerCase();
+        if (seen.has(normalized)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Environment names must be unique',
+          });
+          break;
+        }
+        seen.add(normalized);
+      }
+
+      const defaultCount = envs.filter((env) => env.isDefault).length;
+      if (defaultCount > 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Only one environment can be the default',
+        });
+      }
+    })
+    .optional(),
 });
 
 export const UpdateProjectSchema = z.object({
@@ -50,15 +86,6 @@ export const UpdateProjectSchema = z.object({
 
 export const UpdateProjectMemberSchema = z.object({
   role: z.enum(['admin', 'writer', 'viewer']),
-});
-
-export const CreateEnvironmentSchema = z.object({
-  name: z.string().min(1).max(64),
-  color: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, 'Color must be a valid hex color')
-    .optional(),
-  isDefault: z.boolean().optional(),
 });
 
 export const UpdateEnvironmentSchema = CreateEnvironmentSchema.partial();
@@ -162,6 +189,7 @@ export const CreateEnvironmentRouteSchema = {
   body: CreateEnvironmentSchema,
   response: {
     201: dataOf(EnvironmentResponseSchema),
+    400: ErrorResponseSchema,
     403: ErrorResponseSchema,
     404: ErrorResponseSchema,
     500: ErrorResponseSchema,

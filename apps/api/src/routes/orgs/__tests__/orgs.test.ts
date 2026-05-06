@@ -7,6 +7,7 @@ import {
   CreateOrgRouteSchema,
   GetOrgRouteSchema,
   UpdateOrgRouteSchema,
+  DeleteOrgRouteSchema,
   ListMembersRouteSchema,
   InviteMemberRouteSchema,
   UpdateMemberRoleRouteSchema,
@@ -227,6 +228,55 @@ describe('Org Routes', () => {
         payload: { name: 'Outsider Attempt' },
       });
       expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── DELETE /api/v1/orgs/:orgSlug ──────────────────────────────────────────
+
+  describe('DELETE /api/v1/orgs/:orgSlug', () => {
+    it('owner can delete an org', async () => {
+      const deleteOwner = await createTestUser(app);
+      const org = await createTestOrg(deleteOwner.id);
+
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/orgs/${org.slug}`,
+        headers: { authorization: `Bearer ${deleteOwner.token}` },
+      });
+
+      expect(res.statusCode).toBe(204);
+      parseResponse(DeleteOrgRouteSchema.response[204], res.body || 'null');
+
+      const check = await app.inject({
+        method: 'GET',
+        url: `/api/v1/orgs/${org.slug}`,
+        headers: { authorization: `Bearer ${deleteOwner.token}` },
+      });
+      expect(check.statusCode).toBe(404);
+
+      await cleanup([org.id], [deleteOwner.id]);
+    });
+
+    it('admin cannot delete an org (403)', async () => {
+      const res = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/orgs/${orgSlug}`,
+        headers: { authorization: `Bearer ${adminUser.token}` },
+      });
+
+      expect(res.statusCode).toBe(403);
+      parseResponse(DeleteOrgRouteSchema.response[403], res.body);
+    });
+
+    it('returns 404 for missing org', async () => {
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/orgs/does-not-exist',
+        headers: { authorization: `Bearer ${owner.token}` },
+      });
+
+      expect(res.statusCode).toBe(404);
+      parseResponse(DeleteOrgRouteSchema.response[404], res.body);
     });
   });
 

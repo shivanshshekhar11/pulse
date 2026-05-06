@@ -35,6 +35,17 @@ export const JWTPayloadSchema = z.object({
   email: z.string().email(),
 });
 
+export const UpdateUserSchema = z.object({
+  email: z.string().email().optional(),
+  name: z.string().min(1).max(128).nullable().optional(),
+  avatarUrl: z.string().url().nullable().optional(),
+});
+
+export const ChangePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+});
+
 // ============================================================================
 // Response schemas
 // ============================================================================
@@ -45,6 +56,14 @@ export const UserResponseSchema = z.object({
   email: z.string().email(),
   name: z.string().nullable(),
   avatarUrl: z.string().nullable(),
+});
+
+export const UserOrgResponseSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  name: z.string(),
+  plan: z.string(),
+  role: z.enum(['owner', 'admin', 'member', 'viewer']),
 });
 
 export const AuthTokenPairSchema = z.object({
@@ -102,6 +121,34 @@ export const MeRouteSchema = {
   },
 } as const;
 
+export const UpdateUserRouteSchema = {
+  body: UpdateUserSchema,
+  response: {
+    200: dataOf(UserResponseSchema),
+    400: ErrorResponseSchema,
+    404: ErrorResponseSchema,
+    409: ErrorResponseSchema,
+  },
+} as const;
+
+export const ChangePasswordRouteSchema = {
+  body: ChangePasswordSchema,
+  response: {
+    200: dataOf(z.object({ message: z.string() })),
+    400: ErrorResponseSchema,
+    401: ErrorResponseSchema,
+    404: ErrorResponseSchema,
+  },
+} as const;
+
+export const ListUserOrgsRouteSchema = {
+  response: {
+    200: dataOf(z.array(UserOrgResponseSchema)),
+    401: ErrorResponseSchema,
+    403: ErrorResponseSchema,
+  },
+} as const;
+
 // ============================================================================
 // Inferred types
 // ============================================================================
@@ -111,5 +158,8 @@ export type CreateUser = z.infer<typeof CreateUserSchema>;
 export type Login = z.infer<typeof LoginSchema>;
 export type JWTPayload = z.infer<typeof JWTPayloadSchema>;
 export type UserResponse = z.infer<typeof UserResponseSchema>;
+export type UserOrgResponse = z.infer<typeof UserOrgResponseSchema>;
 export type AuthTokenPair = z.infer<typeof AuthTokenPairSchema>;
 export type AuthRefreshResponse = z.infer<typeof AuthRefreshResponseSchema>;
+export type UpdateUser = z.infer<typeof UpdateUserSchema>;
+export type ChangePassword = z.infer<typeof ChangePasswordSchema>;

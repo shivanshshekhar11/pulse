@@ -11,6 +11,21 @@ export async function findOrgBySlug(slug: string) {
   });
 }
 
+export async function listUserOrgs(userId: string) {
+  return db
+    .select({
+      id: organizations.id,
+      slug: organizations.slug,
+      name: organizations.name,
+      plan: organizations.plan,
+      role: orgMembers.role,
+    })
+    .from(orgMembers)
+    .innerJoin(organizations, eq(orgMembers.orgId, organizations.id))
+    .where(eq(orgMembers.userId, userId))
+    .orderBy(orgMembers.joinedAt);
+}
+
 export async function isSlugTaken(slug: string) {
   const existing = await db.query.organizations.findFirst({
     where: eq(organizations.slug, slug),
@@ -33,6 +48,10 @@ export async function updateOrg(orgId: string, data: UpdateOrganization) {
     .where(eq(organizations.id, orgId))
     .returning();
   return updated;
+}
+
+export async function deleteOrg(orgId: string) {
+  await db.delete(organizations).where(eq(organizations.id, orgId));
 }
 
 // ── Members ───────────────────────────────────────────────────────────────────

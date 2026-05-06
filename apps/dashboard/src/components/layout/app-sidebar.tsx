@@ -3,63 +3,110 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
+import { signOut } from 'next-auth/react';
 import {
-  Flag,
-  Users,
-  KeyRound,
-  ScrollText,
-  Settings,
-  Layers,
-  Boxes,
-  ChevronDown,
-  Activity,
-  Terminal,
-  Search,
+  Users, KeyRound, ScrollText, Settings,
+  Layers, Boxes, ChevronDown, Terminal,
 } from 'lucide-react';
 import { cn } from '~/lib/cn';
 import { OrgSwitcherPopover } from '~/components/popovers/org-switcher';
-import { CommandPalette } from '~/components/popovers/command-palette';
+import { useOrg, useCreateOrg } from '~/lib/hooks/use-org';
+import { useUserOrgs } from '~/lib/hooks/use-user-orgs';
+import { useEnvironments } from '~/lib/hooks/use-projects';
+import { useSdkStream } from '~/lib/hooks/use-sdk-stream';
+import { LiveUpdatesDialog } from '~/components/dialogs/live-updates-dialog';
+import { OrgDialog } from '~/components/dialogs/org-dialog';
 
 type NavItem = {
-  href: (orgSlug: string, projectSlug?: string, envName?: string) => string;
+  href: (orgSlug: string) => string;
+  // matchSegment is the URL segment that marks this item as active.
+  // For org-level routes it's the literal segment (e.g. "segments").
   matchSegment: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   label: string;
-  badge?: string;
 };
 
+// All workspace nav items are org-scoped — no project/env dependency.
+// Flags are accessed through Projects → Project Overview → View Flags.
 const NAV_WORKSPACE: NavItem[] = [
-  { href: (o, p, e) => `/${o}/${p}/${e}/flags`, matchSegment: 'flags', icon: Flag, label: 'Flags', badge: '47' },
-  { href: (o) => `/${o}/segments`, matchSegment: 'segments', icon: Layers, label: 'Segments', badge: '12' },
-  { href: (o) => `/${o}/api-keys`, matchSegment: 'api-keys', icon: KeyRound, label: 'API Keys', badge: '8' },
-  { href: (o) => `/${o}/members`, matchSegment: 'members', icon: Users, label: 'Members', badge: '23' },
+  { href: (o) => `/${o}/projects`, matchSegment: 'projects', icon: Boxes, label: 'Projects' },
+  { href: (o) => `/${o}/segments`, matchSegment: 'segments', icon: Layers, label: 'Segments' },
+  { href: (o) => `/${o}/api-keys`, matchSegment: 'api-keys', icon: KeyRound, label: 'API Keys' },
+  { href: (o) => `/${o}/members`, matchSegment: 'members', icon: Users, label: 'Members' },
   { href: (o) => `/${o}/audit`, matchSegment: 'audit', icon: ScrollText, label: 'Audit Log' },
-  { href: (o) => `/${o}/live-stream`, matchSegment: 'live-stream', icon: Activity, label: 'Live Stream' },
 ];
 
 const NAV_ORG: NavItem[] = [
-  { href: (o) => `/${o}/projects`, matchSegment: 'projects', icon: Boxes, label: 'Projects' },
   { href: (o) => `/${o}/settings`, matchSegment: 'settings', icon: Settings, label: 'Settings' },
 ];
 
 function useRouteSegments() {
   const pathname = usePathname();
   const parts = pathname.split('/').filter(Boolean);
-  return {
-    orgSlug: parts[0] ?? 'acme-corp',
-    projectSlug: parts[1] ?? 'novapay',
-    envName: parts[2] ?? 'staging',
-    activeSegment: parts[parts.length - 1] ?? '',
-  };
+  // /acme-corp                          → orgSlug=acme-corp, rest=[]
+  // /acme-corp/segments                 → orgSlug=acme-corp, rest=[segments]
+  // /acme-corp/novapay/staging/flags    → orgSlug=acme-corp, rest=[novapay,staging,flags]
+  const orgSlug = parts[0] ?? '';
+
+  // Determine the active sidebar segment.
+  // For org-level routes (segments, api-keys, members, audit, settings, projects)
+  // the active segment is parts[1].
+  // For project-level routes (novapay/staging/flags) we highlight "projects".
+  const secondSegment = parts[1] ?? '';
+  const knownOrgSegments = new Set(['segments', 'api-keys', 'members', 'audit', 'settings', 'projects']);
+  const activeSegment = knownOrgSegments.has(secondSegment) ? secondSegment : 'projects';
+
+  const isProjectRoute = secondSegment !== '' && !knownOrgSegments.has(secondSegment);
+  const projectSlug = isProjectRoute ? secondSegment : '';
+  const envName = isProjectRoute ? (parts[2] ?? '') : '';
+
+  return { orgSlug, activeSegment, projectSlug, envName, isProjectRoute };
 }
 
 export function AppSidebar() {
-  const { orgSlug, projectSlug, envName, activeSegment } = useRouteSegments();
+  const { orgSlug, activeSegment, projectSlug, envName, isProjectRoute } = useRouteSegments();
   const router = useRouter();
+  const { data: org } = useOrg(orgSlug);
+  const { data: orgs, isLoading: orgsLoading } = useUserOrgs();
+  const createOrg = useCreateOrg();
+  const { data: environments } = useEnvironments(orgSlug, projectSlug);
+  const env = environments?.find((e) => e.name === envName);
+  const envId = env?.id;
+  const stream = useSdkStream({ envId, enabled: isProjectRoute && !!envId });
 
   const orgBtnRef = useRef<HTMLButtonElement | null>(null);
   const [orgOpen, setOrgOpen] = useState(false);
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [liveOpen, setLiveOpen] = useState(false);
+  const [createOrgOpen, setCreateOrgOpen] = useState(false);
+
+  const planLabel = org?.plan ? `${org.plan} plan` : 'loading plan';
+
+  const statusTone = {
+    connected: 'text-primary',
+    connecting: 'text-warning',
+    reconnecting: 'text-warning',
+    error: 'text-destructive',
+    'missing-key': 'text-muted-foreground',
+    idle: 'text-muted-foreground',
+  }[stream.status];
+
+  const dotTone = {
+    connected: 'bg-primary',
+    connecting: 'bg-warning',
+    reconnecting: 'bg-warning',
+    error: 'bg-destructive',
+    'missing-key': 'bg-dim',
+    idle: 'bg-dim',
+  }[stream.status];
+
+  const statusLabel = {
+    connected: 'connected',
+    connecting: 'connecting',
+    reconnecting: 'reconnecting',
+    error: 'error',
+    'missing-key': 'needs key',
+    idle: 'idle',
+  }[stream.status];
 
   return (
     <>
@@ -70,12 +117,8 @@ export function AppSidebar() {
             <Terminal className="size-3.5 text-primary" strokeWidth={2.5} />
           </div>
           <div className="font-mono leading-none">
-            <div className="text-[15px] tracking-tight">
-              pulse<span className="text-primary">_</span>
-            </div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">
-              v0.1.0
-            </div>
+            <div className="text-[15px] tracking-tight">pulse<span className="text-primary">_</span></div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">v0.1.0</div>
           </div>
         </div>
 
@@ -87,30 +130,15 @@ export function AppSidebar() {
           className="mx-3 mt-3 flex items-center gap-2 px-2.5 py-2 rounded-md bg-surface-1 border border-border hover:border-border-strong transition-colors"
         >
           <div className="size-6 rounded bg-gradient-to-br from-primary/40 to-primary/10 border border-primary/30 grid place-items-center font-mono text-[10px] text-primary uppercase">
-            {orgSlug.slice(0, 1)}
+            {(org?.name ?? orgSlug ?? '?').slice(0, 1)}
           </div>
           <div className="flex-1 text-left min-w-0">
-            <div className="text-[12px] truncate">{orgSlug}</div>
-            <div className="text-[10px] text-muted-foreground font-mono">
-              enterprise · 23 members
+            <div className="text-[12px] truncate">{org?.name ?? orgSlug}</div>
+            <div className="text-[10px] text-muted-foreground font-mono truncate">
+              {planLabel}
             </div>
           </div>
-          <ChevronDown className="size-3.5 text-muted-foreground" />
-        </button>
-
-        {/* Search / command palette trigger */}
-        <button
-          type="button"
-          onClick={() => setPaletteOpen(true)}
-          className="mx-3 mt-3 relative text-left"
-        >
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <div className="w-full pl-8 pr-10 py-1.5 bg-surface-1 border border-border rounded-md text-[12px] font-mono text-muted-foreground hover:border-border-strong transition-colors">
-            search...
-          </div>
-          <kbd className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground font-mono px-1 py-0.5 rounded border border-border bg-surface-2">
-            ⌘K
-          </kbd>
+          <ChevronDown className="size-3.5 text-muted-foreground shrink-0" />
         </button>
 
         {/* Navigation */}
@@ -123,7 +151,7 @@ export function AppSidebar() {
               <NavRow
                 key={item.label}
                 item={item}
-                href={item.href(orgSlug, projectSlug, envName)}
+                href={item.href(orgSlug)}
                 active={activeSegment === item.matchSegment}
               />
             ))}
@@ -144,60 +172,80 @@ export function AppSidebar() {
           </ul>
         </nav>
 
-        {/* Status footer */}
+        {/* SSE status footer */}
         <div className="border-t border-border px-3 py-2.5 font-mono text-[10px] space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
-            <span>SSE</span>
-            <span className="flex items-center gap-1.5 text-primary">
-              <span className="size-1.5 rounded-full bg-primary live-dot" />
-              connected
+            <span>live updates</span>
+            <span className={`flex items-center gap-1.5 ${statusTone}`}>
+              <span className={`size-1.5 rounded-full ${dotTone} ${stream.status === 'connected' ? 'live-dot' : ''}`} />
+              {statusLabel}
             </span>
           </div>
           <div className="flex items-center justify-between text-muted-foreground">
-            <span>region</span>
-            <span>us-east-1</span>
+            <span>env</span>
+            <span>{envName || '—'}</span>
           </div>
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>latency</span>
-            <span className="text-foreground">12ms</span>
-          </div>
+          {isProjectRoute && envId && (stream.status === 'missing-key' || stream.status === 'error') && (
+            <button
+              type="button"
+              onClick={() => setLiveOpen(true)}
+              className="w-full text-left text-[10px] text-primary hover:underline"
+            >
+              set live updates key
+            </button>
+          )}
         </div>
       </aside>
 
-      {/* Popovers rendered outside the aside so they can escape overflow */}
       <OrgSwitcherPopover
         open={orgOpen}
         onClose={() => setOrgOpen(false)}
         anchorRef={orgBtnRef}
+        orgs={orgs}
+        currentSlug={orgSlug}
+        loading={orgsLoading}
+        onSelect={(slug) => router.push(`/${slug}/projects`)}
         onSettings={() => {
           setOrgOpen(false);
           router.push(`/${orgSlug}/settings`);
         }}
+        onCreate={() => {
+          setOrgOpen(false);
+          setCreateOrgOpen(true);
+        }}
+        onSignOut={() => void signOut({ callbackUrl: '/login' })}
       />
-      <CommandPalette
-        open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
+      <LiveUpdatesDialog
+        open={liveOpen}
+        onClose={() => setLiveOpen(false)}
+        envId={envId}
+        envName={envName}
+      />
+      <OrgDialog
+        open={createOrgOpen}
+        onClose={() => setCreateOrgOpen(false)}
+        loading={createOrg.isPending}
+        onSubmit={(values) => {
+          createOrg.mutate(values, {
+            onSuccess: (org) => {
+              setCreateOrgOpen(false);
+              router.push(`/${org.slug}/projects`);
+            },
+          });
+        }}
       />
     </>
   );
 }
 
-function NavRow({
-  item,
-  href,
-  active,
-}: {
-  item: NavItem;
-  href: string;
-  active: boolean;
-}) {
+function NavRow({ item, href, active }: { item: NavItem; href: string; active: boolean }) {
   const Icon = item.icon;
   return (
     <li>
       <Link
         href={href}
         className={cn(
-          'w-full flex items-center gap-2.5 px-2 py-1.5 rounded text-[12.5px] transition-colors group',
+          'w-full flex items-center gap-2.5 px-2 py-1.5 rounded text-[12.5px] transition-colors',
           active
             ? 'bg-primary/10 text-primary border-l-2 border-primary -ml-px pl-[7px]'
             : 'text-foreground/80 hover:bg-surface-1 hover:text-foreground',
@@ -205,18 +253,6 @@ function NavRow({
       >
         <Icon className="size-3.5" strokeWidth={2} />
         <span className="flex-1">{item.label}</span>
-        {item.badge && (
-          <span
-            className={cn(
-              'font-mono text-[10px] px-1.5 py-0.5 rounded',
-              active
-                ? 'bg-primary/20 text-primary'
-                : 'bg-surface-2 text-muted-foreground',
-            )}
-          >
-            {item.badge}
-          </span>
-        )}
       </Link>
     </li>
   );

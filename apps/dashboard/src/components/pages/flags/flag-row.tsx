@@ -1,18 +1,5 @@
 import { Hash, ToggleLeft, Braces, Type, Users, Clock, ChevronRight } from 'lucide-react';
-
-export type Flag = {
-  key: string;
-  name: string;
-  type: 'boolean' | 'string' | 'number' | 'json';
-  enabled: boolean;
-  rollout: number;
-  rules: number;
-  segments: string[];
-  updatedAt: string;
-  updatedBy: string;
-  tags: string[];
-  version: number;
-};
+import type { FlagResponse } from '@pulse-flags/types';
 
 const TYPE_ICON = {
   boolean: ToggleLeft,
@@ -28,12 +15,22 @@ const TYPE_COLOR = {
   json: 'text-magenta bg-magenta/10 border-magenta/30',
 } as const;
 
-/**
- * FlagRow — a single row in the flags table.
- * Wrapped in a <Link> by the parent so the whole row is clickable.
- */
-export function FlagRow({ flag }: { flag: Flag }) {
+function formatRelative(date: string | Date): string {
+  const ms = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(ms / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+export function FlagRow({ flag }: { flag: FlagResponse }) {
   const Icon = TYPE_ICON[flag.type];
+
+  // The API doesn't return rollout% directly — that lives on rules.
+  // We show the flag's enabled state and rule count instead.
+  const ruleCount = '—';
 
   return (
     <div className="group grid grid-cols-[28px_1fr_140px_180px_200px_64px] gap-6 items-center px-6 py-5 border-b border-border cursor-pointer transition-colors hover:bg-surface-1/60">
@@ -51,10 +48,7 @@ export function FlagRow({ flag }: { flag: Flag }) {
         <div className="flex items-center gap-2.5">
           <span className="text-[15px] truncate">{flag.name}</span>
           {flag.tags.slice(0, 2).map((t) => (
-            <span
-              key={t}
-              className="text-[11px] font-mono px-2 py-0.5 rounded bg-surface-2 text-muted-foreground border border-border"
-            >
+            <span key={t} className="text-[11px] font-mono px-2 py-0.5 rounded bg-surface-2 text-muted-foreground border border-border">
               {t}
             </span>
           ))}
@@ -69,53 +63,37 @@ export function FlagRow({ flag }: { flag: Flag }) {
 
       {/* Type badge */}
       <div>
-        <span
-          className={`inline-flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[11.5px] border ${TYPE_COLOR[flag.type]}`}
-        >
+        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[11.5px] border ${TYPE_COLOR[flag.type]}`}>
           <Icon className="size-3.5" strokeWidth={2.2} />
           {flag.type}
         </span>
       </div>
 
-      {/* Rollout bar */}
+      {/* Enabled state (rollout% requires rules fetch — show enabled/disabled) */}
       <div className="font-mono text-[12px]">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-muted-foreground">rollout</span>
-          <span className={flag.enabled ? 'text-foreground' : 'text-dim'}>
-            {flag.rollout}%
+          <span className="text-muted-foreground">status</span>
+          <span className={flag.enabled ? 'text-primary' : 'text-dim'}>
+            {flag.enabled ? 'enabled' : 'disabled'}
           </span>
         </div>
         <div className="h-1.5 bg-surface-2 rounded overflow-hidden">
-          <div
-            className={`h-full transition-all ${flag.enabled ? 'bg-primary' : 'bg-dim'}`}
-            style={{ width: `${flag.rollout}%` }}
-          />
+          <div className={`h-full transition-all ${flag.enabled ? 'bg-primary w-full' : 'bg-dim w-0'}`} />
         </div>
       </div>
 
-      {/* Targeting + updated */}
+      {/* Updated */}
       <div className="font-mono text-[12px] text-muted-foreground space-y-1.5">
         <div className="flex items-center gap-2">
           <Users className="size-3.5 text-dim shrink-0" />
-          {flag.segments.length === 0 ? (
-            <span className="text-dim">all users</span>
-          ) : (
-            <span className="truncate">
-              {flag.segments.slice(0, 2).join(', ')}
-              {flag.segments.length > 2 && (
-                <span className="text-dim"> +{flag.segments.length - 2}</span>
-              )}
-            </span>
-          )}
+          <span className="text-dim">all users</span>
           <span className="text-dim">·</span>
-          <span className="text-foreground">{flag.rules}</span>
+          <span className="text-foreground">{ruleCount}</span>
           <span className="text-dim">rules</span>
         </div>
         <div className="flex items-center gap-1.5 text-dim">
           <Clock className="size-3 shrink-0" />
-          <span>{flag.updatedAt}</span>
-          <span>·</span>
-          <span>{flag.updatedBy}</span>
+          <span>{formatRelative(flag.updatedAt as string | Date)}</span>
         </div>
       </div>
 

@@ -1,33 +1,53 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Save, AlertTriangle, Trash2, Crown, User as UserIcon, Lock,
-  Shield, Smartphone, KeyRound, Building2, Bell, Plug, Plus,
-  LogOut, Camera,
+  Save,
+  AlertTriangle,
+  Trash2,
+  User as UserIcon,
+  Lock,
+  Building2,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from '~/components/ui/page-header';
-import { Toggle } from '~/components/ui/toggle';
+import { useOrg, useUpdateOrg, useDeleteOrg } from '~/lib/hooks/use-org';
+import { useProfile, useUpdateProfile, useChangePassword } from '~/lib/hooks/use-auth';
+import { useUserOrgs } from '~/lib/hooks/use-user-orgs';
+import { ConfirmDialog } from '~/components/dialogs/confirm';
 
-type Tab =
-  | 'profile' | 'security' | 'tokens' | 'sessions' | 'notifications'
-  | 'org-general' | 'org-security' | 'org-billing' | 'org-integrations' | 'org-danger';
+type Tab = 'profile' | 'security' | 'org-general' | 'org-danger';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }>; group: 'account' | 'org' }[] = [
   { id: 'profile', label: 'profile', icon: UserIcon, group: 'account' },
-  { id: 'security', label: 'password & 2FA', icon: Lock, group: 'account' },
-  { id: 'tokens', label: 'personal tokens', icon: KeyRound, group: 'account' },
-  { id: 'sessions', label: 'active sessions', icon: Smartphone, group: 'account' },
-  { id: 'notifications', label: 'notifications', icon: Bell, group: 'account' },
+  { id: 'security', label: 'password', icon: Lock, group: 'account' },
   { id: 'org-general', label: 'general', icon: Building2, group: 'org' },
-  { id: 'org-security', label: 'security', icon: Shield, group: 'org' },
-  { id: 'org-billing', label: 'billing & plan', icon: Crown, group: 'org' },
-  { id: 'org-integrations', label: 'integrations', icon: Plug, group: 'org' },
   { id: 'org-danger', label: 'danger zone', icon: AlertTriangle, group: 'org' },
 ];
 
 export function SettingsPage({ orgSlug }: { orgSlug: string }) {
   const [tab, setTab] = useState<Tab>('profile');
+  const router = useRouter();
+  const { data: org } = useOrg(orgSlug);
+  const updateOrg = useUpdateOrg(orgSlug);
+  const deleteOrg = useDeleteOrg(orgSlug);
+  const { data: profile } = useProfile();
+  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
+  const { refetch: refetchUserOrgs } = useUserOrgs();
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const handleDeleteOrg = async () => {
+    try {
+      await deleteOrg.mutateAsync();
+      const next = await refetchUserOrgs();
+      const nextOrg = next.data?.find((o) => o.slug !== orgSlug);
+      router.push(nextOrg ? `/${nextOrg.slug}/projects` : '/login');
+    } catch {
+      // Errors are surfaced by the mutation toast.
+    }
+  };
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -53,19 +73,52 @@ export function SettingsPage({ orgSlug }: { orgSlug: string }) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-10 py-8 min-w-0">
           <div className="max-w-[820px] space-y-6">
-            {tab === 'profile' && <ProfileSection />}
-            {tab === 'security' && <SecuritySection />}
-            {tab === 'tokens' && <TokensSection />}
-            {tab === 'sessions' && <SessionsSection />}
-            {tab === 'notifications' && <NotificationsSection />}
-            {tab === 'org-general' && <OrgGeneralSection orgSlug={orgSlug} />}
-            {tab === 'org-security' && <OrgSecuritySection />}
-            {tab === 'org-billing' && <OrgBillingSection />}
-            {tab === 'org-integrations' && <OrgIntegrationsSection />}
-            {tab === 'org-danger' && <OrgDangerSection />}
+            {tab === 'profile' && (
+              <ProfileSection
+                profile={profile}
+                saving={updateProfile.isPending}
+                onSave={(values) => updateProfile.mutate(values)}
+              />
+            )}
+            {tab === 'security' && (
+              <SecuritySection
+                saving={changePassword.isPending}
+                onSave={async (values) => { await changePassword.mutateAsync(values); }}
+              />
+            )}
+            {tab === 'org-general' && (
+              <OrgGeneralSection
+                orgSlug={orgSlug}
+                orgName={org?.name}
+                orgPlan={org?.plan}
+                saving={updateOrg.isPending}
+                onSave={(name) => updateOrg.mutate({ name })}
+              />
+            )}
+            {tab === 'org-danger' && (
+              <OrgDangerSection onDelete={() => setDeleteOpen(true)} />
+            )}
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title={`Delete "${org?.name ?? orgSlug}"`}
+        description="This organization, its projects, and all associated data will be removed."
+        confirmLabel="delete organization"
+        confirmType={orgSlug}
+        onConfirm={() => {
+          void handleDeleteOrg();
+        }}
+        consequences={[
+          'All projects, environments, flags, and rules deleted',
+          'API keys immediately revoked',
+          'Audit logs removed with the org',
+          'Cannot be undone',
+        ]}
+      />
     </main>
   );
 }
@@ -86,228 +139,149 @@ function SettingsNavItem({ tab, active, onClick }: { tab: { id: Tab; label: stri
 
 // ── Section components ────────────────────────────────────────────────────────
 
-function ProfileSection() {
-  return (
-    <>
-      <SectionHead title="profile" subtitle="How you appear across pulse." />
-      <Card label="public">
-        <div className="px-5 py-5 flex items-center gap-5">
-          <div className="relative">
-            <div className="size-16 rounded-md bg-gradient-to-br from-primary/40 to-info/40 border border-border grid place-items-center font-mono text-[18px]">AK</div>
-            <button type="button" className="absolute -bottom-1 -right-1 size-6 rounded-md bg-surface-2 border border-border grid place-items-center hover:bg-surface-3">
-              <Camera className="size-3" />
-            </button>
-          </div>
-          <div className="flex-1">
-            <div className="text-[13.5px]">Alex Kowalski</div>
-            <div className="font-mono text-[11.5px] text-muted-foreground">alex@acme.com · joined Jan 2024</div>
-          </div>
-          <button type="button" className="font-mono text-[11.5px] px-3 py-1.5 rounded border border-border bg-surface-2 text-muted-foreground hover:text-foreground">remove avatar</button>
-        </div>
-        <FieldRow label="display name" hint="Shown in the audit log and to teammates."><TextInput defaultValue="Alex Kowalski" /></FieldRow>
-        <FieldRow label="username" hint="Unique handle. Lowercase, hyphenated."><PrefixInput prefix="pulse.dev/u/" defaultValue="alex.k" /></FieldRow>
-        <FieldRow label="timezone"><SelectInput options={['America/New_York (UTC-4)', 'Europe/London (UTC+1)', 'Asia/Tokyo (UTC+9)']} /></FieldRow>
-        <ActionRow><PrimaryBtn icon={Save}>save changes</PrimaryBtn></ActionRow>
-      </Card>
-    </>
-  );
-}
+function ProfileSection({
+  profile,
+  saving,
+  onSave,
+}: {
+  profile?: { name: string | null; email: string; avatarUrl: string | null };
+  saving?: boolean;
+  onSave?: (values: { name: string | null; email: string; avatarUrl: string | null }) => void;
+}) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
 
-function SecuritySection() {
-  const [twofa, setTwofa] = useState(true);
+  useEffect(() => {
+    if (!profile) return;
+    setName(profile.name ?? '');
+    setEmail(profile.email);
+    setAvatarUrl(profile.avatarUrl ?? '');
+  }, [profile]);
+
+  const canSave = !!email;
+
   return (
     <>
-      <SectionHead title="password & 2FA" subtitle="Keep your account secure." />
-      <Card label="password">
-        <FieldRow label="current password"><TextInput type="password" placeholder="••••••••" /></FieldRow>
-        <FieldRow label="new password" hint="Minimum 12 characters."><TextInput type="password" /></FieldRow>
-        <FieldRow label="confirm new password"><TextInput type="password" /></FieldRow>
-        <ActionRow><PrimaryBtn icon={Save}>update password</PrimaryBtn></ActionRow>
-      </Card>
-      <Card label="two-factor authentication">
-        <ToggleRow label="Authenticator app" hint="Use a TOTP app like 1Password or Authy. Required for production toggles." on={twofa} onChange={setTwofa} />
-        <FieldRow label="recovery codes" hint="Single-use codes for account recovery.">
-          <button type="button" className="font-mono text-[11.5px] px-3 py-1.5 rounded border border-border bg-surface-2 text-muted-foreground hover:text-foreground">view & regenerate</button>
+      <SectionHead title="profile" subtitle="Your account details." />
+      <Card label="account">
+        <FieldRow label="display name" hint="Shown in audit logs and member lists.">
+          <TextInput value={name} onChange={(e) => setName(e.target.value)} />
         </FieldRow>
+        <FieldRow label="email" hint="Used for login and notifications.">
+          <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </FieldRow>
+        <FieldRow label="avatar URL" hint="Optional image URL.">
+          <TextInput value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+        </FieldRow>
+        <ActionRow>
+          <PrimaryBtn
+            icon={Save}
+            onClick={() => onSave?.({
+              name: name.trim() ? name.trim() : null,
+              email: email.trim(),
+              avatarUrl: avatarUrl.trim() ? avatarUrl.trim() : null,
+            })}
+            disabled={!canSave || saving}
+          >
+            {saving ? 'saving…' : 'save changes'}
+          </PrimaryBtn>
+        </ActionRow>
       </Card>
     </>
   );
 }
 
-function TokensSection() {
-  const tokens = [
-    { name: 'cli-laptop', prefix: 'ppat_a8f2…', lastUsed: '12m ago', scopes: 'read,write' },
-    { name: 'deploy-bot', prefix: 'ppat_3c0e…', lastUsed: '2h ago', scopes: 'read' },
-  ];
+function SecuritySection({
+  saving,
+  onSave,
+}: {
+  saving?: boolean;
+  onSave?: (values: { currentPassword: string; newPassword: string }) => Promise<void>;
+}) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const mismatch = newPassword && confirmPassword && newPassword !== confirmPassword;
+  const canSave = !!currentPassword && !!newPassword && !mismatch && newPassword.length >= 8;
+
   return (
     <>
-      <SectionHead title="personal access tokens" subtitle="For pulse CLI and personal scripts. Tokens act on your behalf." action={<PrimaryBtn icon={Plus}>generate token</PrimaryBtn>} />
-      <Card label="active tokens">
-        {tokens.map((t) => (
-          <div key={t.name} className="px-5 py-3.5 flex items-center gap-4">
-            <KeyRound className="size-4 text-muted-foreground" />
-            <div className="flex-1 min-w-0">
-              <div className="font-mono text-[12.5px]">{t.name}</div>
-              <div className="font-mono text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                <span>{t.prefix}</span><span className="text-dim">·</span><span>{t.scopes}</span><span className="text-dim">·</span><span>last used {t.lastUsed}</span>
-              </div>
-            </div>
-            <button type="button" className="font-mono text-[11px] px-2.5 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10">revoke</button>
-          </div>
-        ))}
+      <SectionHead title="password" subtitle="Update your account password." />
+      <Card label="password">
+        <FieldRow label="current password">
+          <TextInput type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+        </FieldRow>
+        <FieldRow label="new password" hint="Minimum 8 characters.">
+          <TextInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+        </FieldRow>
+        <FieldRow label="confirm new password" hint={mismatch ? 'passwords do not match' : undefined}>
+          <TextInput type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        </FieldRow>
+        <ActionRow>
+          <PrimaryBtn
+            icon={Save}
+            onClick={async () => {
+              if (!onSave) return;
+              try {
+                await onSave({ currentPassword, newPassword });
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+              } catch {
+                // Errors are surfaced by the mutation toast.
+              }
+            }}
+            disabled={!canSave || saving}
+          >
+            {saving ? 'updating…' : 'update password'}
+          </PrimaryBtn>
+        </ActionRow>
       </Card>
     </>
   );
 }
 
-function SessionsSection() {
-  const sessions = [
-    { device: 'MacBook Pro · Chrome 134', loc: 'Brooklyn, NY', ip: '73.42.18.91', last: 'now', current: true },
-    { device: 'iPhone 15 · Safari', loc: 'Brooklyn, NY', ip: '73.42.18.91', last: '1h ago', current: false },
-    { device: 'Linux · pulse-cli/0.1.0', loc: 'us-east-1', ip: '10.0.4.22', last: '2d ago', current: false },
-  ];
-  return (
-    <>
-      <SectionHead title="active sessions" subtitle="Devices currently signed in to your account." action={
-        <button type="button" className="font-mono text-[11.5px] px-3 py-1.5 rounded border border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20 flex items-center gap-1.5">
-          <LogOut className="size-3.5" /> sign out everywhere
-        </button>
-      } />
-      <Card label="devices">
-        {sessions.map((s) => (
-          <div key={s.ip + s.device} className="px-5 py-3.5 flex items-center gap-4">
-            <Smartphone className="size-4 text-muted-foreground" />
-            <div className="flex-1 min-w-0">
-              <div className="text-[12.5px] flex items-center gap-2">
-                {s.device}
-                {s.current && <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30">current</span>}
-              </div>
-              <div className="font-mono text-[11px] text-muted-foreground mt-0.5">{s.loc} · {s.ip} · {s.last}</div>
-            </div>
-            {!s.current && <button type="button" className="font-mono text-[11px] px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground">revoke</button>}
-          </div>
-        ))}
-      </Card>
-    </>
-  );
-}
-
-function NotificationsSection() {
-  const [email, setEmail] = useState(true);
-  const [push, setPush] = useState(false);
-  const [digest, setDigest] = useState(true);
-  return (
-    <>
-      <SectionHead title="notifications" subtitle="Choose what reaches your inbox." />
-      <Card label="channels">
-        <ToggleRow label="Email" hint="alex@acme.com" on={email} onChange={setEmail} />
-        <ToggleRow label="Browser push" hint="Real-time toast notifications" on={push} onChange={setPush} />
-        <ToggleRow label="Weekly digest" hint="Summary of flag activity every Monday." on={digest} onChange={setDigest} />
-      </Card>
-    </>
-  );
-}
-
-function OrgGeneralSection({ orgSlug }: { orgSlug: string }) {
+function OrgGeneralSection({ orgSlug, orgName, orgPlan, onSave, saving }: { orgSlug: string; orgName?: string; orgPlan?: string; onSave?: (name: string) => void; saving?: boolean }) {
+  const [name, setName] = useState(orgName ?? '');
+  const planLabel = orgPlan ? orgPlan.charAt(0).toUpperCase() + orgPlan.slice(1) : 'Free';
+  useEffect(() => {
+    if (orgName && name === '') setName(orgName);
+  }, [orgName, name]);
   return (
     <>
       <SectionHead title="organization · general" subtitle="Public-facing organization details." />
       <Card label="profile">
-        <FieldRow label="organization name"><TextInput defaultValue="Acme Corp" /></FieldRow>
-        <FieldRow label="slug" hint="Used in URLs and the API. Immutable."><PrefixInput prefix="pulse.dev/" defaultValue={orgSlug} disabled /></FieldRow>
-        <FieldRow label="default project"><SelectInput options={['novapay', 'lighthouse', 'pelican-mobile']} /></FieldRow>
-        <ActionRow><PrimaryBtn icon={Save}>save changes</PrimaryBtn></ActionRow>
+        <FieldRow label="organization name" hint="Display name shown across the dashboard.">
+          <TextInput value={name} onChange={(e) => setName((e.target as HTMLInputElement).value)} />
+        </FieldRow>
+        <FieldRow label="slug" hint="Used in URLs and the API. Immutable.">
+          <PrefixInput prefix="pulse.dev/" defaultValue={orgSlug} disabled />
+        </FieldRow>
+        <FieldRow label="plan" hint="Read-only in v1."><TextInput value={planLabel} disabled /></FieldRow>
+        <ActionRow>
+          <PrimaryBtn icon={Save} onClick={() => onSave?.(name)} disabled={saving}>
+            {saving ? 'saving…' : 'save changes'}
+          </PrimaryBtn>
+        </ActionRow>
       </Card>
     </>
   );
 }
 
-function OrgSecuritySection() {
-  const [enforce2fa, setEnforce2fa] = useState(true);
-  const [sso, setSso] = useState(false);
-  return (
-    <>
-      <SectionHead title="organization · security" subtitle="Policy applied to all members." />
-      <Card label="policies">
-        <ToggleRow label="Enforce 2FA for all members" hint="Members without 2FA cannot sign in." on={enforce2fa} onChange={setEnforce2fa} />
-        <ToggleRow label="Single sign-on (SAML)" hint="Available on Enterprise plans." on={sso} onChange={setSso} />
-        <FieldRow label="session timeout" hint="Auto-logout after inactivity."><SelectInput options={['15 minutes', '1 hour', '8 hours', '30 days']} /></FieldRow>
-        <FieldRow label="allowed email domains" hint="Comma-separated. Empty = anyone with an invite."><TextInput defaultValue="acme.com, acme-internal.dev" /></FieldRow>
-      </Card>
-    </>
-  );
-}
-
-function OrgBillingSection() {
-  return (
-    <>
-      <SectionHead title="billing & plan" subtitle="Manage your subscription and invoices." />
-      <Card label="current plan">
-        <div className="px-5 py-5 flex items-center gap-4">
-          <div className="size-12 rounded-md bg-warning/15 border border-warning/40 grid place-items-center">
-            <Crown className="size-5 text-warning" />
-          </div>
-          <div className="flex-1">
-            <div className="text-[14px]">Enterprise</div>
-            <div className="font-mono text-[11.5px] text-muted-foreground">unlimited flags · 1y audit retention · sso · priority support</div>
-          </div>
-          <div className="text-right">
-            <div className="font-mono text-[16px] text-foreground">$1,200<span className="text-muted-foreground text-[12px]">/mo</span></div>
-            <div className="font-mono text-[10.5px] text-dim">renews Jun 1, 2026</div>
-          </div>
-        </div>
-        <div className="px-5 py-3 bg-surface-2/40 flex items-center justify-end gap-2">
-          <button type="button" className="font-mono text-[11.5px] px-3 py-1.5 rounded border border-border bg-surface-2 hover:bg-surface-3">view invoices</button>
-          <PrimaryBtn>manage billing</PrimaryBtn>
-        </div>
-      </Card>
-    </>
-  );
-}
-
-function OrgIntegrationsSection() {
-  const integrations = [
-    { name: 'Slack', desc: 'Post audit events to channels', connected: true, color: 'from-magenta/40 to-info/40' },
-    { name: 'GitHub', desc: 'Link flags to PRs and issues', connected: true, color: 'from-foreground/30 to-muted-foreground/20' },
-    { name: 'Datadog', desc: 'Forward eval metrics', connected: false, color: 'from-magenta/40 to-warning/40' },
-    { name: 'Webhooks', desc: 'Custom HTTP endpoints', connected: true, color: 'from-primary/40 to-info/40' },
-  ];
-  return (
-    <>
-      <SectionHead title="integrations" subtitle="Connect pulse to the rest of your stack." />
-      <Card label="available">
-        {integrations.map((i) => (
-          <div key={i.name} className="px-5 py-4 flex items-center gap-4">
-            <div className={`size-10 rounded-md bg-gradient-to-br ${i.color} border border-border`} />
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px]">{i.name}</div>
-              <div className="font-mono text-[11.5px] text-muted-foreground">{i.desc}</div>
-            </div>
-            {i.connected ? (
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[10.5px] text-primary flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-primary" /> connected
-                </span>
-                <button type="button" className="font-mono text-[11.5px] px-3 py-1.5 rounded border border-border bg-surface-2 hover:bg-surface-3">configure</button>
-              </div>
-            ) : (
-              <PrimaryBtn>connect</PrimaryBtn>
-            )}
-          </div>
-        ))}
-      </Card>
-    </>
-  );
-}
-
-function OrgDangerSection() {
+function OrgDangerSection({ onDelete }: { onDelete?: () => void }) {
   return (
     <>
       <SectionHead title="danger zone" subtitle="Irreversible and destructive operations." />
-      <Card label="" tone="danger">
-        <DangerRow title="Transfer ownership" hint="Move this organization to another member. You will lose owner access." cta="transfer" />
-        <DangerRow title="Export & delete data" hint="Download a JSON archive of all flags, segments, and audit logs." cta="export" />
-        <DangerRow title="Delete organization" hint="Permanently delete this organization, all projects, flags, and audit history. This cannot be undone." cta="delete org" destructive icon={Trash2} />
+      <Card label="danger" tone="danger">
+        <DangerRow
+          title="Delete organization"
+          hint="Permanently delete this organization, all projects, flags, and audit history."
+          cta="delete org"
+          destructive
+          icon={Trash2}
+          onClick={onDelete}
+        />
       </Card>
     </>
   );
@@ -319,7 +293,9 @@ function SectionHead({ title, subtitle, action }: { title: string; subtitle?: st
   return (
     <div className="flex items-end justify-between gap-4 pb-2">
       <div>
-        <h2 className="text-[20px]">{title}</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-[20px]">{title}</h2>
+        </div>
         {subtitle && <p className="font-mono text-[12px] text-muted-foreground mt-1">{subtitle}</p>}
       </div>
       {action}
@@ -353,30 +329,22 @@ function FieldRow({ label, hint, children }: { label: string; hint?: string; chi
   );
 }
 
-function ToggleRow({ label, hint, on, onChange }: { label: string; hint: string; on: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <div className="px-5 py-4 flex items-center gap-6">
-      <div className="flex-1">
-        <div className="text-[13px]">{label}</div>
-        {hint && <p className="text-[11.5px] text-muted-foreground mt-0.5">{hint}</p>}
-      </div>
-      <Toggle on={on} onChange={onChange} />
-    </div>
-  );
-}
-
 function ActionRow({ children }: { children: React.ReactNode }) {
   return <div className="px-5 py-3 bg-surface-2/40 flex justify-end">{children}</div>;
 }
 
-function DangerRow({ title, hint, cta, destructive, icon: Icon }: { title: string; hint: string; cta: string; destructive?: boolean; icon?: React.ComponentType<{ className?: string }> }) {
+function DangerRow({ title, hint, cta, destructive, icon: Icon, onClick }: { title: string; hint: string; cta: string; destructive?: boolean; icon?: React.ComponentType<{ className?: string }>; onClick?: () => void }) {
   return (
     <div className="px-5 py-4 flex items-center gap-6">
       <div className="flex-1">
         <div className="text-[13.5px]">{title}</div>
         <p className="text-[11.5px] text-muted-foreground mt-0.5">{hint}</p>
       </div>
-      <button type="button" className={`flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] border ${destructive ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20' : 'border-border bg-surface-2 text-muted-foreground hover:text-foreground'}`}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={`flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] border ${destructive ? 'border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20' : 'border-border bg-surface-2 text-muted-foreground hover:text-foreground'}`}
+      >
         {Icon && <Icon className="size-3.5" />}
         {cta}
       </button>
@@ -385,7 +353,12 @@ function DangerRow({ title, hint, cta, destructive, icon: Icon }: { title: strin
 }
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`w-full px-3 py-2 bg-surface-0 border border-border rounded-md text-[13px] focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 disabled:opacity-60 ${props.className ?? ''}`} />;
+  return (
+    <input
+      {...props}
+      className={`w-full px-3 py-2 bg-surface-0 border border-border rounded-md text-[13px] focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 disabled:opacity-60 ${props.className ?? ''}`}
+    />
+  );
 }
 
 function PrefixInput({ prefix, ...props }: { prefix: string } & React.InputHTMLAttributes<HTMLInputElement>) {
@@ -397,17 +370,9 @@ function PrefixInput({ prefix, ...props }: { prefix: string } & React.InputHTMLA
   );
 }
 
-function SelectInput({ options }: { options: string[] }) {
+function PrimaryBtn({ icon: Icon, children, onClick, disabled }: { icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>; children: React.ReactNode; onClick?: () => void; disabled?: boolean }) {
   return (
-    <select className="w-full px-3 py-2 bg-surface-0 border border-border rounded-md text-[13px] font-mono focus:outline-none focus:border-primary/50">
-      {options.map((o) => <option key={o}>{o}</option>)}
-    </select>
-  );
-}
-
-function PrimaryBtn({ icon: Icon, children }: { icon?: React.ComponentType<{ className?: string; strokeWidth?: number }>; children: React.ReactNode }) {
-  return (
-    <button type="button" className="flex items-center gap-1.5 px-3.5 py-2 rounded-md font-mono text-[12.5px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
+    <button type="button" onClick={onClick} disabled={disabled} className="flex items-center gap-1.5 px-3.5 py-2 rounded-md font-mono text-[12.5px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
       {Icon && <Icon className="size-3.5" strokeWidth={2.2} />}
       {children}
     </button>

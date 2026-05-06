@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 import { db } from '../../../db';
+import { eq } from 'drizzle-orm';
 import { refreshTokens } from '../../../db/schema';
 import { sha256 } from '../../../lib/crypto';
 import {
@@ -9,6 +10,8 @@ import {
   RefreshRouteSchema,
   LogoutRouteSchema,
   MeRouteSchema,
+  UpdateUserRouteSchema,
+  ChangePasswordRouteSchema,
 } from '@pulse-flags/types';
 import { buildApp, createTestUser, cleanup, uid, parseResponse } from '../../../test/helpers';
 
@@ -403,6 +406,142 @@ describe('Auth Routes', () => {
         method: 'GET',
         url: '/api/v1/auth/me',
         headers: { authorization: user.token },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+  });
+
+  // ── PATCH /api/v1/auth/me ─────────────────────────────────────────────────
+
+  describe('PATCH /api/v1/auth/me', () => {
+    it('updates name and email', async () => {
+      const user = await createTestUser(app);
+      createdUserIds.push(user.id);
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/auth/me',
+        headers: { authorization: `Bearer ${user.token}` },
+        payload: { name: 'Updated Name', email: `updated-${uid()}@test.com` },
+      });
+
+      expect(res.statusCode).toBe(200);
+      const body = parseResponse(UpdateUserRouteSchema.response[200], res.body);
+      expect(body.data.name).toBe('Updated Name');
+      expect(body.data.email).toContain('updated-');
+    });
+
+    it('returns 409 if email is taken', async () => {
+      const user = await createTestUser(app);
+      const other = await createTestUser(app, { email: `taken-${uid()}@test.com` });
+      createdUserIds.push(user.id, other.id);
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/auth/me',
+        headers: { authorization: `Bearer ${user.token}` },
+        payload: { email: other.email },
+      });
+
+      expect(res.statusCode).toBe(409);
+      parseResponse(UpdateUserRouteSchema.response[409], res.body);
+    });
+
+    it('returns 400 if no fields provided', async () => {
+      const user = await createTestUser(app);
+      createdUserIds.push(user.id);
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/auth/me',
+        headers: { authorization: `Bearer ${user.token}` },
+        payload: {},
+      });
+
+      expect(res.statusCode).toBe(400);
+      parseResponse(UpdateUserRouteSchema.response[400], res.body);
+    });
+
+    it('returns 401 without auth', async () => {
+      const res = await app.inject({ method: 'PATCH', url: '/api/v1/auth/me', payload: { name: 'Nope' } });
+      expect(res.statusCode).toBe(401);
+    });
+  });
+
+  // ── POST /api/v1/auth/me/password ─────────────────────────────────────────
+
+  describe('POST /api/v1/auth/me/password', () => {
+    it('changes password and revokes refresh tokens', async () => {
+      const user = await createTestUser(app);
+      createdUserIds.push(user.id);
+
+      const loginRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: user.email, password: 'password123' },
+      });
+      const loginBody = parseResponse(LoginRouteSchema.response[200], loginRes.body);
+      const refreshToken = loginBody.data.refreshToken;
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/me/password',
+        headers: { authorization: `Bearer ${user.token}` },
+        payload: { currentPassword: 'password123', newPassword: 'newpassword123' },
+      });
+
+      expect(res.statusCode).toBe(200);
+      parseResponse(ChangePasswordRouteSchema.response[200], res.body);
+
+      const refreshHash = sha256(refreshToken);
+      const tokenRow = await db.query.refreshTokens.findFirst({
+        where: eq(refreshTokens.tokenHash, refreshHash),
+      });
+      expect(tokenRow?.revokedAt).not.toBeNull();
+
+      const relogin = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        payload: { email: user.email, password: 'newpassword123' },
+      });
+      expect(relogin.statusCode).toBe(200);
+    });
+
+    it('returns 401 if current password is wrong', async () => {
+      const user = await createTestUser(app);
+      createdUserIds.push(user.id);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/me/password',
+        headers: { authorization: `Bearer ${user.token}` },
+        payload: { currentPassword: 'wrong', newPassword: 'newpassword123' },
+      });
+
+      expect(res.statusCode).toBe(401);
+      parseResponse(ChangePasswordRouteSchema.response[401], res.body);
+    });
+
+    it('returns 400 if new password matches current password', async () => {
+      const user = await createTestUser(app);
+      createdUserIds.push(user.id);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/me/password',
+        headers: { authorization: `Bearer ${user.token}` },
+        payload: { currentPassword: 'password123', newPassword: 'password123' },
+      });
+
+      expect(res.statusCode).toBe(400);
+      parseResponse(ChangePasswordRouteSchema.response[400], res.body);
+    });
+
+    it('returns 401 without auth', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/me/password',
+        payload: { currentPassword: 'password123', newPassword: 'newpassword123' },
       });
       expect(res.statusCode).toBe(401);
     });

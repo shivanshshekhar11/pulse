@@ -107,6 +107,7 @@ export function PopoverItem({
   danger,
   active,
   trailing,
+  disabled,
 }: {
   icon?: React.ComponentType<{ className?: string }>;
   label: string;
@@ -115,13 +116,17 @@ export function PopoverItem({
   danger?: boolean;
   active?: boolean;
   trailing?: React.ReactNode;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={`w-full flex items-center gap-2.5 px-3 py-2 text-left text-[12.5px] transition-colors ${
-        danger
+        disabled
+          ? 'text-muted-foreground/60 cursor-not-allowed'
+          : danger
           ? 'text-destructive hover:bg-destructive/10'
           : active
             ? 'bg-primary/10 text-primary'

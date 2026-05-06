@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { projects, environments } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import type { CreateProject, UpdateProject, CreateEnvironment } from '@pulse-flags/types';
 
 // ── Projects ──────────────────────────────────────────────────────────────────
@@ -53,9 +53,23 @@ export async function listEnvironments(projectId: string) {
   });
 }
 
+export async function countEnvironments(projectId: string) {
+  const [totals] = await db
+    .select({ total: count() })
+    .from(environments)
+    .where(eq(environments.projectId, projectId));
+  return totals?.total ?? 0;
+}
+
 export async function findEnvironmentByName(projectId: string, name: string) {
   return db.query.environments.findFirst({
     where: and(eq(environments.projectId, projectId), eq(environments.name, name)),
+  });
+}
+
+export async function findDefaultEnvironment(projectId: string) {
+  return db.query.environments.findFirst({
+    where: and(eq(environments.projectId, projectId), eq(environments.isDefault, true)),
   });
 }
 
@@ -70,4 +84,21 @@ export async function createEnvironment(projectId: string, data: CreateEnvironme
     })
     .returning();
   return environment;
+}
+
+export async function createEnvironments(projectId: string, envs: CreateEnvironment[]) {
+  if (!envs.length) return [];
+
+  const values = envs.map((env) => ({
+    projectId,
+    name: env.name,
+    color: env.color ?? '#6366f1',
+    isDefault: env.isDefault ?? false,
+  }));
+
+  return db.insert(environments).values(values).returning();
+}
+
+export async function clearDefaultEnvironments(projectId: string) {
+  await db.update(environments).set({ isDefault: false }).where(eq(environments.projectId, projectId));
 }
