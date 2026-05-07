@@ -1,9 +1,8 @@
 'use client';
 
 import { useSession, signOut } from 'next-auth/react';
-import { useTheme } from 'next-themes';
 import {
-  User, Sun, Moon, LogOut,
+  User, LogOut,
 } from 'lucide-react';
 import { Popover, PopoverItem, PopoverSeparator } from '~/components/primitives/popover';
 
@@ -19,7 +18,6 @@ export function UserMenuPopover({
   onAccount?: () => void;
 }) {
   const { data: session } = useSession();
-  const { theme, setTheme } = useTheme();
 
   const user = session?.user;
   const initials = user?.name
@@ -58,14 +56,6 @@ export function UserMenuPopover({
             onAccount?.();
             onClose();
           }}
-        />
-      </div>
-      <PopoverSeparator />
-      <div className="py-1">
-        <PopoverItem
-          icon={theme === 'dark' ? Sun : Moon}
-          label={theme === 'dark' ? 'switch to light' : 'switch to dark'}
-          onClick={() => { setTheme(theme === 'dark' ? 'light' : 'dark'); onClose(); }}
         />
       </div>
       <PopoverSeparator />

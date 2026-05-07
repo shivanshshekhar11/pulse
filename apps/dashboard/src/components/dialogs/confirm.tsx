@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { AlertTriangle } from 'lucide-react';
 import {
   Dialog,
@@ -31,8 +34,29 @@ export function ConfirmDialog({
   consequences?: string[];
   variant?: 'danger' | 'warning';
 }) {
-  const [typed, setTyped] = useState('');
+  const ConfirmSchema = z.object({
+    typed: z.string().optional(),
+  }).superRefine((values, context) => {
+    if (confirmType && values.typed !== confirmType) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['typed'],
+        message: 'type the confirmation text exactly',
+      });
+    }
+  });
+
+  const { register, handleSubmit, reset, watch } = useForm<z.infer<typeof ConfirmSchema>>({
+    resolver: zodResolver(ConfirmSchema),
+    defaultValues: { typed: '' },
+  });
+
+  const typed = watch('typed') ?? '';
   const canConfirm = !confirmType || typed === confirmType;
+
+  useEffect(() => {
+    if (open) reset({ typed: '' });
+  }, [open, reset]);
 
   return (
     <Dialog open={open} onClose={onClose} size="sm">
@@ -75,9 +99,8 @@ export function ConfirmDialog({
             <Input
               mono
               autoFocus
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
               placeholder={confirmType}
+              {...register('typed')}
             />
           </div>
         )}
@@ -89,11 +112,11 @@ export function ConfirmDialog({
         <Button
           variant="danger"
           disabled={!canConfirm}
-          onClick={() => {
+          onClick={handleSubmit(() => {
             onConfirm?.();
-            setTyped('');
+            reset({ typed: '' });
             onClose();
-          }}
+          })}
         >
           {confirmLabel}
         </Button>

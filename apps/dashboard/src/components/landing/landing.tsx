@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {
-  Terminal,
   Zap,
   Radio,
   GitBranch,
@@ -76,10 +75,10 @@ export function Landing() {
         <div className="max-w-[1200px] mx-auto px-8 h-16 flex items-center gap-8">
           <div className="flex items-center gap-2">
             <div className="size-7 rounded-md bg-primary/15 border border-primary/40 grid place-items-center glow-primary">
-              <Terminal className="size-3.5 text-primary" strokeWidth={2.5} />
-            </div>
-            <span className="font-mono text-[15px]">
-              pulse<span className="text-primary">_</span>
+                <div className="size-3.5 rounded-sm bg-primary" />
+              </div>
+              <span className="font-mono text-[15px]">
+                pulse
             </span>
           </div>
           <nav className="hidden md:flex items-center gap-6 font-mono text-[12.5px] text-muted-foreground">
@@ -123,13 +122,12 @@ export function Landing() {
             >
               feature flags
               <br />
-              <span className="gradient-text">built for the</span>
+              <span className="gradient-text">built for</span>
               <br />
               <span className="text-foreground">
-                terminal generation<span className="text-primary">_</span>
+                modern teams
               </span>
             </h1>
-
             <p
               className="mt-6 text-[15px] text-muted-foreground max-w-[520px] leading-relaxed fade-up"
               style={{ animationDelay: '200ms' }}
@@ -153,7 +151,7 @@ export function Landing() {
                 type="button"
                 className="flex items-center gap-2 px-5 py-3 rounded-md font-mono text-[13px] bg-surface-1 border border-border text-foreground hover:border-border-strong"
               >
-                <Terminal className="size-4" /> npm i @pulse-flags/sdk
+                npm i @pulse-flags/sdk
               </button>
             </div>
 
@@ -361,7 +359,7 @@ export function Landing() {
                 type="button"
                 className="flex items-center gap-2 px-6 py-3 rounded-md font-mono text-[13px] bg-surface-2 border border-border text-foreground hover:border-border-strong"
               >
-                <Terminal className="size-4" /> docker compose up
+                docker compose up
               </button>
             </div>
           </div>
@@ -374,10 +372,10 @@ export function Landing() {
           <div className="col-span-2">
             <div className="flex items-center gap-2 mb-3">
               <div className="size-7 rounded-md bg-primary/15 border border-primary/40 grid place-items-center">
-                <Terminal className="size-3.5 text-primary" />
-              </div>
-              <span className="text-[14px]">
-                pulse<span className="text-primary">_</span>
+                  <div className="size-3.5 rounded-sm bg-primary" />
+                </div>
+                <span className="text-[14px]">
+                  pulse
               </span>
             </div>
             <p className="text-muted-foreground max-w-[320px] leading-relaxed">

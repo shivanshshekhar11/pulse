@@ -20,17 +20,19 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     onRequest: [fastify.authenticate],
     schema: {
       params: ListFlagsRouteSchema.params,
+      querystring: ListFlagsRouteSchema.querystring,
       response: ListFlagsRouteSchema.response,
     },
   }, async (request, reply) => {
     const { orgSlug, projectSlug, envName } = request.params;
+    const { limit, offset } = request.query;
 
     const ctx = await resolveEnvironment(reply, request.id, orgSlug, projectSlug, envName);
     if (!ctx) return;
 
     if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id))) return;
 
-    const flagList = await flagService.listFlags(ctx.environment.id);
+    const flagList = await flagService.listFlags(ctx.environment.id, limit, offset);
     return reply.send({ data: flagList });
   });
 

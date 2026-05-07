@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { CreateApiKeySchema } from '@pulse-flags/types';
 import {
   KeyRound, Plus, Eye, EyeOff, Copy, AlertTriangle, Check,
 } from 'lucide-react';
@@ -10,7 +14,6 @@ import {
 import {
   Field, Input, Button, Checkbox, Select,
 } from '~/components/primitives/form';
-import { setStreamKey } from '~/lib/stream-keys';
 
 // Fallback shown while real environments are loading
 const FALLBACK_ENV_OPTIONS = [
@@ -50,34 +53,28 @@ export function ApiKeyDialog({
   onDismissKey?: () => void;
 }) {
   const [step, setStep] = useState<'form' | 'reveal'>('form');
-  const [name, setName] = useState('');
-  const [envId, setEnvId] = useState('');
-  const [scopes, setScopes] = useState<{ read: boolean; write: boolean }>({ read: true, write: false });
-  const [expiry, setExpiry] = useState('never');
   const [reveal, setReveal] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const { register, handleSubmit, setValue, watch, reset, formState: { errors } } = useForm<z.input<typeof CreateApiKeySchema>>({
+    resolver: zodResolver(CreateApiKeySchema),
+    defaultValues: {
+      name: '',
+      environmentId: '',
+      scopes: ['read'],
+      expiresAt: undefined,
+    },
+  });
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setStep('form');
-      setName('');
-      setScopes({ read: true, write: false });
-      setExpiry('never');
       setReveal(false);
       setCopied(false);
-      // Default to first environment
-      const firstId = environments?.[0]?.id ?? '';
-      setEnvId(firstId);
+      reset({ name: '', environmentId: environments?.[0]?.id ?? '', scopes: ['read'], expiresAt: undefined });
     }
-  }, [open, environments]);
-
-  // When environments load after dialog is already open, set default
-  useEffect(() => {
-    if (open && !envId && environments && environments.length > 0) {
-      setEnvId(environments[0]!.id);
-    }
-  }, [environments, open, envId]);
+  }, [open, environments, reset]);
 
   // Switch to reveal step when key is generated
   useEffect(() => {
@@ -93,27 +90,16 @@ export function ApiKeyDialog({
       }))
     : FALLBACK_ENV_OPTIONS;
 
-  const selectedEnv = environments?.find((e) => e.id === envId);
 
-  const handleCreate = () => {
-    if (!name.trim() || (!scopes.read && !scopes.write) || !envId) return;
-    const expiresAt = expiry === 'never' ? null : (() => {
-      const d = new Date();
-      if (expiry === '30d') d.setDate(d.getDate() + 30);
-      else if (expiry === '90d') d.setDate(d.getDate() + 90);
-      else if (expiry === '1y') d.setFullYear(d.getFullYear() + 1);
-      return d;
-    })();
-    const selectedScopes: ('read' | 'write')[] = [
-      ...(scopes.read ? ['read' as const] : []),
-      ...(scopes.write ? ['write' as const] : []),
-    ];
-    const selectedEnv = environments?.find((e) => e.id === envId);
+  const onValid = (data: z.input<typeof CreateApiKeySchema>) => {
+    // Map optional expiresAt if left undefined
+    const expiresAt = data.expiresAt instanceof Date ? data.expiresAt : null;
+    const selectedEnv = environments?.find((e) => e.id === data.environmentId);
     onSubmit?.({
-      name: name.trim(),
-      environmentId: envId,
+      name: data.name.trim(),
+      environmentId: data.environmentId,
       envName: selectedEnv?.name ?? '',
-      scopes: selectedScopes,
+      scopes: data.scopes ?? ['read'],
       expiresAt,
     });
   };
@@ -129,7 +115,8 @@ export function ApiKeyDialog({
     setTimeout(() => setCopied(false), 1800);
   };
 
-  const canCreate = !!name.trim() && (scopes.read || scopes.write) && !!envId;
+  const currentScopes = watch('scopes') ?? [];
+  const canCreate = !!(watch('name')?.trim()) && currentScopes.length > 0 && !!watch('environmentId');
   const displayKey = generatedKey ?? '';
 
   return (
@@ -143,18 +130,17 @@ export function ApiKeyDialog({
             onClose={handleClose}
           />
           <DialogBody className="space-y-5">
-            <Field label="name" required hint="for your reference">
+            <Field label="name" required error={errors.name?.message}>
               <Input
                 autoFocus
                 placeholder="e.g. novapay-staging-sdk"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                {...register('name')}
               />
             </Field>
 
-            <Field label="environment" required>
+            <Field label="environment" required error={errors.environmentId?.message}>
               {environments && environments.length > 0 ? (
-                <Select value={envId} onChange={setEnvId} options={envOptions} />
+                <Select value={watch('environmentId') ?? ''} onChange={(v) => setValue('environmentId', v)} options={envOptions} />
               ) : (
                 <div className="w-full px-3 py-2 bg-surface-0 border border-border rounded-md text-[13px] text-muted-foreground font-mono">
                   loading environments…
@@ -165,14 +151,24 @@ export function ApiKeyDialog({
             <Field label="scopes" required>
               <div className="space-y-2 p-3 rounded-md bg-surface-0 border border-border">
                 <Checkbox
-                  checked={scopes.read}
-                  onChange={(v) => setScopes({ ...scopes, read: v })}
+                  checked={currentScopes.includes('read')}
+                  onChange={(v) => {
+                    const next = v
+                      ? Array.from(new Set([...currentScopes, 'read']))
+                      : currentScopes.filter((s) => s !== 'read');
+                    setValue('scopes', next as any);
+                  }}
                   label="read"
-                  hint="evaluate flags · read ruleset · open SSE stream"
+                  hint="evaluate flags · read ruleset · open stream"
                 />
                 <Checkbox
-                  checked={scopes.write}
-                  onChange={(v) => setScopes({ ...scopes, write: v })}
+                  checked={currentScopes.includes('write')}
+                  onChange={(v) => {
+                    const next = v
+                      ? Array.from(new Set([...currentScopes, 'write']))
+                      : currentScopes.filter((s) => s !== 'write');
+                    setValue('scopes', next as any);
+                  }}
                   label="write"
                   hint="mutate flags and rules · use sparingly · never embed in clients"
                 />
@@ -180,7 +176,30 @@ export function ApiKeyDialog({
             </Field>
 
             <Field label="expiry">
-              <Select value={expiry} onChange={setExpiry} options={EXPIRY_OPTIONS} />
+              <Select
+                value={(() => {
+                  const e = watch('expiresAt');
+                  if (!e) return 'never';
+                  const d = new Date(e as any);
+                  const now = new Date();
+                  const days = Math.round((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                  if (days >= 365) return '1y';
+                  if (days >= 90) return '90d';
+                  if (days >= 30) return '30d';
+                  return 'never';
+                })()}
+                onChange={(v) => {
+                  if (v === 'never') setValue('expiresAt', undefined);
+                  else {
+                    const d = new Date();
+                    if (v === '30d') d.setDate(d.getDate() + 30);
+                    else if (v === '90d') d.setDate(d.getDate() + 90);
+                    else if (v === '1y') d.setFullYear(d.getFullYear() + 1);
+                    setValue('expiresAt', d as any);
+                  }
+                }}
+                options={EXPIRY_OPTIONS}
+              />
             </Field>
           </DialogBody>
           <DialogFooter hint="key format: ps_(live|test)_<40 hex chars> · stored as SHA-256">
@@ -189,7 +208,7 @@ export function ApiKeyDialog({
               variant="primary"
               icon={Plus}
               disabled={!canCreate || loading || !environments || environments.length === 0}
-              onClick={handleCreate}
+              onClick={handleSubmit(onValid)}
             >
               {loading ? 'generating…' : 'generate'}
             </Button>
@@ -237,19 +256,7 @@ export function ApiKeyDialog({
               <span className="text-dim">// usage</span>{'\n'}
               export PULSE_API_KEY={reveal ? displayKey.slice(0, 18) + '...' : 'ps_test_...'}
             </pre>
-            {selectedEnv && generatedKey && (
-              <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-0 px-3 py-2">
-                <div className="text-[11.5px] text-muted-foreground">
-                  use this key for live updates (memory only)
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={() => setStreamKey(selectedEnv.id, generatedKey, selectedEnv.name)}
-                >
-                  use key
-                </Button>
-              </div>
-            )}
+
           </DialogBody>
           <DialogFooter>
             <Button variant="primary" onClick={handleClose}>I&apos;ve saved it — close</Button>

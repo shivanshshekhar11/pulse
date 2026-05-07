@@ -1,6 +1,11 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { CreateSegmentSchema } from '@pulse-flags/types';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Plus, Save } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
@@ -58,18 +63,25 @@ export function SegmentDialog({
   loading?: boolean;
   initial?: SegmentInitial;
 }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const { register, handleSubmit, reset, setValue, watch } = useForm<z.input<typeof CreateSegmentSchema>>({
+    resolver: zodResolver(CreateSegmentSchema),
+    defaultValues: { name: '', description: '', conditions: undefined as any },
+  });
   const defaultOp = useMemo(() => OPERATORS[0]?.value ?? 'eq', []);
   const [conditions, setConditions] = useState<ConditionGroup>(() =>
     makeDefaultConditionNode(defaultOp),
   );
 
+  
+
   // Reset / pre-populate when dialog opens
   useEffect(() => {
     if (!open) return;
-    setName(initial?.name ?? '');
-    setDescription(initial?.description ?? '');
+    reset({
+      name: initial?.name ?? '',
+      description: initial?.description ?? '',
+      conditions: initial?.conditions as any,
+    });
     if (initial?.conditions) {
       setConditions(wrapConditionRoot(initial.conditions as Condition, defaultOp));
     } else {
@@ -78,13 +90,13 @@ export function SegmentDialog({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultOp, initial]);
 
-  const canSubmit = !!name && isConditionNodeValid(conditions);
+  const canSubmit = isConditionNodeValid(conditions) && !!watch('name');
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
+  const onValid = (values: z.input<typeof CreateSegmentSchema>) => {
+    if (!isConditionNodeValid(conditions)) return;
     onSubmit?.({
-      name,
-      description: description || undefined,
+      name: values.name,
+      description: values.description || undefined,
       conditions: nodeToCondition(conditions),
     });
   };
@@ -100,11 +112,11 @@ export function SegmentDialog({
       <DialogBody className="space-y-5">
         <div className="grid grid-cols-[1fr] gap-4">
           <Field label="name" required>
-            <Input mono autoFocus placeholder="Internal_Beta" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input mono autoFocus placeholder="Internal_Beta" {...register('name')} />
           </Field>
         </div>
         <Field label="description" hint="optional">
-          <Textarea placeholder="Acme employees and trusted external testers" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Textarea placeholder="Acme employees and trusted external testers" {...register('description')} />
         </Field>
 
         <div>
@@ -116,14 +128,22 @@ export function SegmentDialog({
           </div>
           <ConditionBuilder
             root={conditions}
-            onChange={setConditions}
+            onChange={(node) => {
+              setConditions(node);
+              // keep form in sync for potential consumers
+              try {
+                setValue('conditions', nodeToCondition(node) as any);
+              } catch {
+                // ignore
+              }
+            }}
             operators={OPERATORS}
           />
         </div>
       </DialogBody>
       <DialogFooter hint="segment conditions">
         <Button variant="ghost" onClick={onClose}>cancel</Button>
-        <Button variant="primary" icon={mode === 'create' ? Plus : Save} disabled={!canSubmit || loading} onClick={handleSubmit}>
+        <Button variant="primary" icon={mode === 'create' ? Plus : Save} disabled={!canSubmit || loading} onClick={handleSubmit(onValid)}>
           {loading ? 'saving…' : mode === 'create' ? 'create segment' : 'save changes'}
         </Button>
       </DialogFooter>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { signOut } from 'next-auth/react';
 import {
   Users, KeyRound, ScrollText, Settings,
@@ -12,9 +12,6 @@ import { cn } from '~/lib/cn';
 import { OrgSwitcherPopover } from '~/components/popovers/org-switcher';
 import { useOrg, useCreateOrg } from '~/lib/hooks/use-org';
 import { useUserOrgs } from '~/lib/hooks/use-user-orgs';
-import { useEnvironments } from '~/lib/hooks/use-projects';
-import { useSdkStream } from '~/lib/hooks/use-sdk-stream';
-import { LiveUpdatesDialog } from '~/components/dialogs/live-updates-dialog';
 import { OrgDialog } from '~/components/dialogs/org-dialog';
 
 type NavItem = {
@@ -64,49 +61,23 @@ function useRouteSegments() {
 }
 
 export function AppSidebar() {
-  const { orgSlug, activeSegment, projectSlug, envName, isProjectRoute } = useRouteSegments();
+  const { orgSlug, activeSegment, envName } = useRouteSegments();
   const router = useRouter();
   const { data: org } = useOrg(orgSlug);
-  const { data: orgs, isLoading: orgsLoading } = useUserOrgs();
+  const { data: orgs, isLoading: orgsLoading, isFetched: orgsFetched } = useUserOrgs();
   const createOrg = useCreateOrg();
-  const { data: environments } = useEnvironments(orgSlug, projectSlug);
-  const env = environments?.find((e) => e.name === envName);
-  const envId = env?.id;
-  const stream = useSdkStream({ envId, enabled: isProjectRoute && !!envId });
-
-  const orgBtnRef = useRef<HTMLButtonElement | null>(null);
-  const [orgOpen, setOrgOpen] = useState(false);
-  const [liveOpen, setLiveOpen] = useState(false);
-  const [createOrgOpen, setCreateOrgOpen] = useState(false);
-
+  
+    const orgBtnRef = useRef<HTMLButtonElement | null>(null);
+    const [orgOpen, setOrgOpen] = useState(false);
+    const [createOrgOpen, setCreateOrgOpen] = useState(false);
+  
+    const forceOrgCreate = orgsFetched && !orgsLoading && (orgs?.length ?? 0) === 0;
+  
+    useEffect(() => {
+      if (forceOrgCreate) setCreateOrgOpen(true);
+    }, [forceOrgCreate]);
+  
   const planLabel = org?.plan ? `${org.plan} plan` : 'loading plan';
-
-  const statusTone = {
-    connected: 'text-primary',
-    connecting: 'text-warning',
-    reconnecting: 'text-warning',
-    error: 'text-destructive',
-    'missing-key': 'text-muted-foreground',
-    idle: 'text-muted-foreground',
-  }[stream.status];
-
-  const dotTone = {
-    connected: 'bg-primary',
-    connecting: 'bg-warning',
-    reconnecting: 'bg-warning',
-    error: 'bg-destructive',
-    'missing-key': 'bg-dim',
-    idle: 'bg-dim',
-  }[stream.status];
-
-  const statusLabel = {
-    connected: 'connected',
-    connecting: 'connecting',
-    reconnecting: 'reconnecting',
-    error: 'error',
-    'missing-key': 'needs key',
-    idle: 'idle',
-  }[stream.status];
 
   return (
     <>
@@ -172,28 +143,12 @@ export function AppSidebar() {
           </ul>
         </nav>
 
-        {/* SSE status footer */}
+        {/* Env status footer */}
         <div className="border-t border-border px-3 py-2.5 font-mono text-[10px] space-y-1">
-          <div className="flex items-center justify-between text-muted-foreground">
-            <span>live updates</span>
-            <span className={`flex items-center gap-1.5 ${statusTone}`}>
-              <span className={`size-1.5 rounded-full ${dotTone} ${stream.status === 'connected' ? 'live-dot' : ''}`} />
-              {statusLabel}
-            </span>
-          </div>
           <div className="flex items-center justify-between text-muted-foreground">
             <span>env</span>
             <span>{envName || '—'}</span>
           </div>
-          {isProjectRoute && envId && (stream.status === 'missing-key' || stream.status === 'error') && (
-            <button
-              type="button"
-              onClick={() => setLiveOpen(true)}
-              className="w-full text-left text-[10px] text-primary hover:underline"
-            >
-              set live updates key
-            </button>
-          )}
         </div>
       </aside>
 
@@ -215,15 +170,13 @@ export function AppSidebar() {
         }}
         onSignOut={() => void signOut({ callbackUrl: '/login' })}
       />
-      <LiveUpdatesDialog
-        open={liveOpen}
-        onClose={() => setLiveOpen(false)}
-        envId={envId}
-        envName={envName}
-      />
       <OrgDialog
-        open={createOrgOpen}
-        onClose={() => setCreateOrgOpen(false)}
+        open={createOrgOpen || forceOrgCreate}
+        onClose={() => {
+          if (forceOrgCreate) return;
+          setCreateOrgOpen(false);
+        }}
+        dismissable={!forceOrgCreate}
         loading={createOrg.isPending}
         onSubmit={(values) => {
           createOrg.mutate(values, {

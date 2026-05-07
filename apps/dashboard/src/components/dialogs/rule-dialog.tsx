@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Plus, Save } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
 } from '~/components/primitives/dialog';
 import { Field, Input, Button } from '~/components/primitives/form';
+import { CreateRuleSchema } from '@pulse-flags/types';
 import type { Condition, Operator } from '@pulse-flags/types';
 import {
   ConditionBuilder,
@@ -73,9 +77,10 @@ export function RuleDialog({
   initial?: RuleInitial;
 }) {
   const defaultOp = useMemo(() => OPERATORS[0]?.value ?? 'eq', []);
-  const [name, setName] = useState('');
-  const [pct, setPct] = useState(100);
-  const [value, setValue] = useState('true');
+  const { register, handleSubmit, reset, setValue: setFormValue, watch } = useForm<z.input<typeof CreateRuleSchema>>({
+    resolver: zodResolver(CreateRuleSchema),
+    defaultValues: { name: '', percentage: 100, value: 'true', conditions: undefined },
+  });
   const [conditions, setConditions] = useState<ConditionGroup>(() =>
     makeDefaultConditionNode(defaultOp),
   );
@@ -84,29 +89,33 @@ export function RuleDialog({
   useEffect(() => {
     if (!open) return;
     if (initial) {
-      setName(initial.name ?? '');
-      setPct(initial.percentage);
-      setValue(JSON.stringify(initial.value));
+      reset({
+        name: initial.name ?? '',
+        percentage: initial.percentage,
+        value: JSON.stringify(initial.value),
+        conditions: initial.conditions as any,
+      });
       setConditions(wrapConditionRoot(initial.conditions as Condition, defaultOp));
     } else {
-      setName('');
-      setPct(100);
-      setValue('true');
+      reset({ name: '', percentage: 100, value: 'true', conditions: undefined });
       setConditions(makeDefaultConditionNode(defaultOp));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultOp, initial]);
 
-  const canSubmit = isConditionNodeValid(conditions) && value.trim().length > 0;
+  const canSubmit = isConditionNodeValid(conditions) && (watch('value') ?? '').toString().trim().length > 0;
   const leafCount = countLeaves(conditions);
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
+  const onValid = (values: z.input<typeof CreateRuleSchema>) => {
+    if (!isConditionNodeValid(conditions)) return;
+    const rawValue = typeof values.value === 'string' ? values.value : String(values.value ?? '');
+    let parsedValue: unknown = rawValue;
+    try { parsedValue = JSON.parse(rawValue); } catch { /* leave as-is */ }
     onSubmit?.({
-      name: name || undefined,
+      name: values.name || undefined,
       conditions: nodeToCondition(conditions),
-      percentage: pct,
-      value: (() => { try { return JSON.parse(value); } catch { return value; } })(),
+      percentage: values.percentage ?? 100,
+      value: parsedValue,
       priority: initial?.priority ?? 0,
       enabled: true,
     });
@@ -123,7 +132,7 @@ export function RuleDialog({
       <DialogBody className="space-y-5">
         <div className="grid grid-cols-[1fr] gap-4">
           <Field label="name" hint="optional">
-            <Input placeholder="EU pro users" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input placeholder="EU pro users" {...register('name')} />
           </Field>
         </div>
 
@@ -136,7 +145,10 @@ export function RuleDialog({
           </div>
           <ConditionBuilder
             root={conditions}
-            onChange={setConditions}
+            onChange={(node) => {
+              setConditions(node);
+              try { setFormValue('conditions', nodeToCondition(node)); } catch {}
+            }}
             operators={OPERATORS}
           />
         </div>
@@ -145,27 +157,26 @@ export function RuleDialog({
           <Field label="rollout %" hint="sha256(key:userId) % 100">
             <div className="space-y-2">
               <input
-                type="range" min={0} max={100} value={pct}
-                onChange={(e) => setPct(parseInt(e.target.value))}
+                type="range" min={0} max={100} {...register('percentage', { valueAsNumber: true })}
                 className="w-full accent-[#8be36b]"
               />
               <div className="flex items-center justify-between font-mono text-[11.5px] text-muted-foreground">
                 <span>0%</span>
-                <span className="text-foreground">{pct}%</span>
+                <span className="text-foreground">{watch('percentage') ?? 0}%</span>
                 <span>100%</span>
               </div>
             </div>
           </Field>
           <Field label="return value" required hint="when rule matches">
-            <Input mono value={value} onChange={(e) => setValue(e.target.value)} />
+            <Input mono {...register('value')} />
           </Field>
         </div>
 
-        <pre className="font-mono text-[11.5px] p-3 rounded-md bg-surface-0 border border-border text-muted-foreground overflow-x-auto">
+          <pre className="font-mono text-[11.5px] p-3 rounded-md bg-surface-0 border border-border text-muted-foreground overflow-x-auto">
           <span className="text-dim">// preview</span>{'\n'}
-          <span className="text-magenta">if</span> ({leafCount} conditions) <span className="text-magenta">and</span> bucket &lt; {pct}{'\n'}
+          <span className="text-magenta">if</span> ({leafCount} conditions) <span className="text-magenta">and</span> bucket &lt; {watch('percentage') ?? 0}{'\n'}
           {'  '}<span className="text-muted-foreground">return</span>{' '}
-          <span className="text-primary">{value}</span>
+          <span className="text-primary">{String(watch('value') ?? '')}</span>
         </pre>
       </DialogBody>
       <DialogFooter hint="audit logged · increments flag version">
@@ -174,7 +185,7 @@ export function RuleDialog({
           variant="primary"
           icon={mode === 'create' ? Plus : Save}
           disabled={!canSubmit || loading}
-          onClick={handleSubmit}
+          onClick={handleSubmit(onValid)}
         >
           {loading ? 'saving…' : mode === 'create' ? 'add rule' : 'save rule'}
         </Button>

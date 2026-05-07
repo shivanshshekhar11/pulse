@@ -20,11 +20,13 @@ export default async function segmentRoutes(fastify: FastifyInstance) {
     onRequest: [fastify.authenticate],
     schema: {
       params: ListSegmentsRouteSchema.params,
+      querystring: ListSegmentsRouteSchema.querystring,
       response: ListSegmentsRouteSchema.response,
     },
   }, async (request, reply) => {
     const requestId = request.id;
     const { orgSlug } = request.params;
+    const { limit, offset } = request.query;
 
     const org = await findOrgBySlug(orgSlug);
     if (!org) {
@@ -35,7 +37,7 @@ export default async function segmentRoutes(fastify: FastifyInstance) {
 
     if (!(await assertPermission(request, reply, 'segments:read', org.id))) return;
 
-    const segmentList = await segmentService.listSegments(org.id);
+    const segmentList = await segmentService.listSegments(org.id, limit, offset);
     return reply.send({ data: segmentList });
   });
 

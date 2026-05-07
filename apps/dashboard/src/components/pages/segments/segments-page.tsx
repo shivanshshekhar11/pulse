@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Users, Code2, Pencil, Copy, Trash2, ChevronRight, Loader2 } from 'lucide-react';
 import { PageHeader } from '~/components/ui/page-header';
 import { SegmentDialog } from '~/components/dialogs/segment-dialog';
@@ -31,14 +31,29 @@ function parseConds(conditions: unknown): Cond[] {
 const SEGMENT_COLORS = ['#8be36b', '#6bc5ff', '#f0b95a', '#c77dff', '#ff5d5d'];
 
 export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
-  const { data: segments, isLoading } = useSegments(orgSlug);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<SegmentResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SegmentResponse | null>(null);
+  const [page, setPage] = useState(1);
+
+  const pageSize = 8;
+  const { data: segmentData, isLoading } = useSegments(orgSlug, pageSize, (page - 1) * pageSize);
   const deleteSegment = useDeleteSegment(orgSlug);
   const createSegment = useCreateSegment(orgSlug);
   const updateSegment = useUpdateSegment(orgSlug);
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<SegmentResponse | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<SegmentResponse | null>(null);
+  const segments = segmentData?.items ?? [];
+  const total = segmentData?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, total);
+  const rangeStart = total === 0 ? 0 : startIndex + 1;
+  const rangeEnd = endIndex;
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -68,7 +83,7 @@ export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
         ) : (
           <div className="grid grid-cols-2 gap-4 max-w-[1200px]">
             {segments.map((s, idx) => {
-              const color = SEGMENT_COLORS[idx % SEGMENT_COLORS.length] ?? '#8be36b';
+              const color = SEGMENT_COLORS[(startIndex + idx) % SEGMENT_COLORS.length] ?? '#8be36b';
               const conds = parseConds(s.conditions);
               return (
                 <article key={s.id} className="rounded-md border border-border bg-surface-1 hover:border-border-strong transition-colors group cursor-pointer">
@@ -119,6 +134,37 @@ export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
           </div>
         )}
       </div>
+
+      {total > 0 && (
+        <div className="px-10 pb-8">
+          <div className="max-w-[1200px] flex items-center justify-between rounded-md border border-border bg-surface-0/40 px-4 py-3">
+            <div className="font-mono text-[12px] text-dim">
+              <span className="text-primary">$</span> showing {rangeStart}-{rangeEnd} of {total} segments
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="px-2.5 py-1.5 rounded font-mono text-[11.5px] border border-border bg-surface-1 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                prev
+              </button>
+              <span className="font-mono text-[11px] text-dim">
+                page {safePage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="px-2.5 py-1.5 rounded font-mono text-[11.5px] border border-border bg-surface-1 text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <SegmentDialog
         open={createOpen}

@@ -1,11 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Send } from 'lucide-react';
+import { z } from 'zod';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
 } from '~/components/primitives/dialog';
 import { Field, Input, Button, Radio } from '~/components/primitives/form';
+import { InviteMemberSchema, UpdateMemberRoleSchema } from '@pulse-flags/types';
 
 type Role = 'owner' | 'admin' | 'member' | 'viewer';
 
@@ -31,15 +35,20 @@ export function InviteMemberDialog({
   onSubmit?: (values: InviteMemberFormValues) => void;
   loading?: boolean;
 }) {
-  const [emails, setEmails] = useState('');
-  const [role, setRole] = useState<Role>('member');
+  const { register, handleSubmit, reset, control } = useForm<z.input<typeof InviteMemberSchema>>({
+    resolver: zodResolver(InviteMemberSchema),
+    defaultValues: { email: '', role: 'member' },
+  });
 
-  const handleSubmit = () => {
-    if (!emails.trim()) return;
-    // Support comma-separated — submit the first email for now
-    const email = emails.split(',')[0]?.trim() ?? '';
+  useEffect(() => {
+    if (!open) return;
+    reset({ email: '', role: 'member' });
+  }, [open, reset]);
+
+  const onValid = (values: z.input<typeof InviteMemberSchema>) => {
+    const email = values.email.split(',')[0]?.trim() ?? '';
     if (!email) return;
-    onSubmit?.({ email, role });
+    onSubmit?.({ email, role: values.role ?? 'member' });
   };
 
   return (
@@ -56,13 +65,18 @@ export function InviteMemberDialog({
             autoFocus
             type="email"
             placeholder="alex@acme.com, taylor@acme.com"
-            value={emails}
-            onChange={(e) => setEmails(e.target.value)}
+            {...register('email')}
           />
         </Field>
 
         <Field label="org role" required>
-          <Radio<Role> options={ROLES} value={role} onChange={setRole} />
+          <Controller
+            control={control}
+            name="role"
+            render={({ field }) => (
+              <Radio<Role> options={ROLES} value={field.value ?? 'member'} onChange={field.onChange} />
+            )}
+          />
         </Field>
 
         <div className="rounded-md border border-info/30 bg-info/5 p-3 font-mono text-[11.5px] text-muted-foreground">
@@ -71,7 +85,7 @@ export function InviteMemberDialog({
       </DialogBody>
       <DialogFooter hint="audit logged · invitee notified by email">
         <Button variant="ghost" onClick={onClose}>cancel</Button>
-        <Button variant="primary" icon={Send} disabled={!emails.trim() || loading} onClick={handleSubmit}>
+        <Button variant="primary" icon={Send} disabled={loading} onClick={handleSubmit(onValid)}>
           {loading ? 'sending…' : 'send invite'}
         </Button>
       </DialogFooter>
@@ -96,11 +110,17 @@ export function ChangeRoleDialog({
   member?: { name: string; email: string; role: Role };
   loading?: boolean;
 }) {
-  const [role, setRole] = useState<Role>(member?.role ?? 'member');
+  const { control, reset, handleSubmit } = useForm<z.input<typeof UpdateMemberRoleSchema>>({
+    resolver: zodResolver(UpdateMemberRoleSchema),
+    defaultValues: { role: member?.role ?? 'member' },
+  });
 
-  const handleSubmit = () => {
-    onSubmit?.({ role });
-  };
+  useEffect(() => {
+    if (!open) return;
+    reset({ role: member?.role ?? 'member' });
+  }, [open, member, reset]);
+
+  const onValid = (values: z.input<typeof UpdateMemberRoleSchema>) => onSubmit?.({ role: values.role });
 
   return (
     <Dialog open={open} onClose={onClose} size="md">
@@ -112,12 +132,14 @@ export function ChangeRoleDialog({
       />
       <DialogBody className="space-y-5">
         <Field label="new role" required>
-          <Radio<Role> options={ROLES} value={role} onChange={setRole} />
+          <Controller control={control} name="role" render={({ field }) => (
+            <Radio<Role> options={ROLES} value={field.value ?? 'member'} onChange={field.onChange} />
+          )} />
         </Field>
       </DialogBody>
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>cancel</Button>
-        <Button variant="primary" disabled={loading} onClick={handleSubmit}>
+        <Button variant="primary" disabled={loading} onClick={handleSubmit(onValid)}>
           {loading ? 'saving…' : 'save'}
         </Button>
       </DialogFooter>

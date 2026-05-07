@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react';
 
 const LINES = [
-  { delay: 200, text: '$ pulse init --org=acme-corp', color: 'text-foreground' },
-  { delay: 800, text: '→ workspace ready · postgres connected · redis pub/sub up', color: 'text-muted-foreground' },
-  { delay: 1500, text: '$ pulse list --env=production --watch', color: 'text-foreground' },
-  { delay: 2300, text: '● new_dashboard_v2     bool   40% rollout   2 rules', color: 'text-primary' },
-  { delay: 2600, text: '● pricing_cta_text     str    100%          0 rules', color: 'text-info' },
-  { delay: 2900, text: '● checkout_timeout_ms  num    100%          1 rule ', color: 'text-warning' },
-  { delay: 3200, text: '● theme_config        json   100%          1 rule ', color: 'text-magenta' },
-  { delay: 3700, text: '[sse] ruleset:updated → 1247 sdks · 12ms p95', color: 'text-primary' },
+  { delay: 200, text: '// Evaluating flag for user: user_123', color: 'text-dim' },
+  { delay: 800, text: 'const isEnabled = pulse.isEnabled("new_dashboard_v2");', color: 'text-foreground' },
+  { delay: 1500, text: '// Evaluated in 0.12ms locally', color: 'text-primary' },
+  { delay: 2300, text: 'â— new_dashboard_v2     bool   40% rollout   2 rules', color: 'text-primary' },
+  { delay: 2600, text: 'â— pricing_cta_text     str    100%          0 rules', color: 'text-info' },
+  { delay: 2900, text: 'â— checkout_timeout_ms  num    100%          1 rule ', color: 'text-warning' },
+  { delay: 3200, text: 'â— theme_config        json   100%          1 rule ', color: 'text-magenta' },
+  { delay: 3700, text: '{ "status": "success", "evaluations": 1247 }', color: 'text-muted-foreground' },
 ] as const;
 
 export function TerminalHero() {
@@ -33,10 +33,10 @@ export function TerminalHero() {
           <span className="size-2.5 rounded-full bg-primary/70" />
         </div>
         <span className="flex-1 text-center font-mono text-[11px] text-muted-foreground">
-          ~/acme-corp — pulse@v0.1.0
-        </span>
-        <span className="font-mono text-[10px] text-dim">zsh</span>
-      </div>
+            evaluator.ts
+          </span>
+          <span className="font-mono text-[10px] text-dim">node</span>
+        </div>
 
       {/* Body */}
       <div className="p-5 font-mono text-[12.5px] leading-relaxed min-h-[280px] noise">

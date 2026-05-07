@@ -80,6 +80,15 @@ export const FlagResponseSchema = z.object({
 });
 
 // ============================================================================
+// Querystring schemas
+// ============================================================================
+
+export const ListFlagsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+// ============================================================================
 // Params schemas
 // ============================================================================
 
@@ -99,8 +108,16 @@ export const FlagParamsSchema = EnvParamsSchema.extend({
 
 export const ListFlagsRouteSchema = {
   params: EnvParamsSchema,
+  querystring: ListFlagsQuerySchema,
   response: {
-    200: dataOf(z.array(FlagResponseSchema)),
+    200: dataOf(
+      z.object({
+        items: z.array(FlagResponseSchema),
+        total: z.number().int(),
+        limit: z.number().int(),
+        offset: z.number().int(),
+      })
+    ),
     403: ErrorResponseSchema,
     404: ErrorResponseSchema,
   },

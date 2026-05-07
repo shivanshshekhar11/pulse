@@ -7,13 +7,13 @@ import type { CreateSegment, UpdateSegment } from '@pulse-flags/types';
 import { toast } from 'sonner';
 import { ApiError } from '~/lib/api';
 
-export function useSegments(orgSlug: string) {
+export function useSegments(orgSlug: string, limit: number = 50, offset: number = 0) {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken;
 
   return useQuery({
-    queryKey: ['segments', orgSlug],
-    queryFn: () => segmentsApi.list(orgSlug, token),
+    queryKey: ['segments', orgSlug, limit, offset],
+    queryFn: () => segmentsApi.list(orgSlug, limit, offset, token),
     enabled: !!token,
   });
 }

@@ -1,11 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Plus } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
 } from '~/components/primitives/dialog';
 import { Field, Input, Button } from '~/components/primitives/form';
+import { CreateOrganizationSchema } from '@pulse-flags/types';
 
 export interface OrgFormValues {
   name: string;
@@ -17,39 +21,41 @@ export function OrgDialog({
   onClose,
   onSubmit,
   loading,
+  dismissable = true,
 }: {
   open: boolean;
   onClose: () => void;
   onSubmit?: (values: OrgFormValues) => void;
   loading?: boolean;
+  dismissable?: boolean;
 }) {
-  const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
+  const { register, handleSubmit, reset, setValue, watch } = useForm<z.input<typeof CreateOrganizationSchema>>({
+    resolver: zodResolver(CreateOrganizationSchema),
+    defaultValues: { name: '', slug: '' },
+  });
 
   useEffect(() => {
     if (!open) return;
-    setName('');
-    setSlug('');
-  }, [open]);
+    reset({ name: '', slug: '' });
+  }, [open, reset]);
 
   const slugify = (value: string) =>
     value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
+  const slug = watch('slug') ?? '';
+  const name = watch('name') ?? '';
   const slugError = slug && !/^[a-z0-9-]+$/.test(slug) ? 'invalid format' : undefined;
   const canSubmit = !!name && !!slug && !slugError;
 
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    onSubmit?.({ name, slug });
-  };
+  const onValid = (values: z.input<typeof CreateOrganizationSchema>) => onSubmit?.({ name: values.name, slug: values.slug });
 
   return (
-    <Dialog open={open} onClose={onClose} size="md">
+    <Dialog open={open} onClose={onClose} size="md" dismissable={dismissable}>
       <DialogHeader
         crumb="new organization"
         title="create organization"
         subtitle="Organizations scope projects, members, and audit logs."
-        onClose={onClose}
+        onClose={dismissable ? onClose : undefined}
       />
       <DialogBody className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
@@ -57,10 +63,11 @@ export function OrgDialog({
             <Input
               autoFocus
               placeholder="Acme Corp"
-              value={name}
+              {...register('name')}
               onChange={(e) => {
-                setName(e.target.value);
-                setSlug(slugify(e.target.value));
+                const v = e.target.value;
+                setValue('name', v);
+                setValue('slug', slugify(v));
               }}
             />
           </Field>
@@ -68,15 +75,14 @@ export function OrgDialog({
             <Input
               mono
               placeholder="acme-corp"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
+              {...register('slug')}
             />
           </Field>
         </div>
       </DialogBody>
       <DialogFooter>
-        <Button variant="ghost" onClick={onClose}>cancel</Button>
-        <Button variant="primary" icon={Plus} disabled={!canSubmit || loading} onClick={handleSubmit}>
+        {dismissable ? <Button variant="ghost" onClick={onClose}>cancel</Button> : <span />}
+        <Button variant="primary" icon={Plus} disabled={!canSubmit || loading} onClick={handleSubmit(onValid)}>
           {loading ? 'creating…' : 'create organization'}
         </Button>
       </DialogFooter>

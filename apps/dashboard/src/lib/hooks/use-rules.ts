@@ -46,6 +46,7 @@ export function useUpdateRule(o: string, p: string, e: string, fk: string) {
       rulesApi.update(o, p, e, fk, ruleId, body, token),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['rules', o, p, e, fk] });
+      void qc.invalidateQueries({ queryKey: ['flag', o, p, e, fk] });
       toast.success('Rule updated');
     },
     onError: (err) => {
@@ -63,6 +64,7 @@ export function useDeleteRule(o: string, p: string, e: string, fk: string) {
     mutationFn: (ruleId: string) => rulesApi.delete(o, p, e, fk, ruleId, token),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['rules', o, p, e, fk] });
+      void qc.invalidateQueries({ queryKey: ['flag', o, p, e, fk] });
       toast.success('Rule deleted');
     },
     onError: (err) => {
@@ -80,6 +82,7 @@ export function useReorderRules(o: string, p: string, e: string, fk: string) {
     mutationFn: (body: ReorderRules) => rulesApi.reorder(o, p, e, fk, body, token),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['rules', o, p, e, fk] });
+      void qc.invalidateQueries({ queryKey: ['flag', o, p, e, fk] });
     },
     onError: (err) => {
       toast.error(err instanceof ApiError ? err.message : 'Failed to reorder rules');

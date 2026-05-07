@@ -68,7 +68,7 @@ describe('Segment Routes', () => {
 
       expect(res.statusCode).toBe(200);
       const body = parseResponse(ListSegmentsRouteSchema.response[200], res.body);
-      expect(body.data.length).toBeGreaterThanOrEqual(2);
+      expect(body.data.items.length).toBeGreaterThanOrEqual(2);
     });
 
     it('viewer can list segments', async () => {

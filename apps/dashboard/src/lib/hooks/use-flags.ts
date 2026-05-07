@@ -6,15 +6,17 @@ import { flagsApi } from '~/lib/api';
 import type { CreateFlag, UpdateFlag } from '@pulse-flags/types';
 import { toast } from 'sonner';
 import { ApiError } from '~/lib/api';
+import { FLAG_QUERY_OPTIONS } from '~/lib/query-client';
 
-export function useFlags(orgSlug: string, projectSlug: string, envName: string) {
+export function useFlags(orgSlug: string, projectSlug: string, envName: string, limit: number = 50, offset: number = 0) {
   const { data: session } = useSession();
   const token = (session as { accessToken?: string })?.accessToken;
 
   return useQuery({
-    queryKey: ['flags', orgSlug, projectSlug, envName],
-    queryFn: () => flagsApi.list(orgSlug, projectSlug, envName, token),
+    queryKey: ['flags', orgSlug, projectSlug, envName, limit, offset],
+    queryFn: () => flagsApi.list(orgSlug, projectSlug, envName, limit, offset, token),
     enabled: !!token,
+    ...FLAG_QUERY_OPTIONS,
   });
 }
 
@@ -26,6 +28,7 @@ export function useFlag(orgSlug: string, projectSlug: string, envName: string, f
     queryKey: ['flag', orgSlug, projectSlug, envName, flagKey],
     queryFn: () => flagsApi.get(orgSlug, projectSlug, envName, flagKey, token),
     enabled: !!token && !!flagKey,
+    ...FLAG_QUERY_OPTIONS,
   });
 }
 

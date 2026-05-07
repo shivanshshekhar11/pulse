@@ -8,6 +8,7 @@ import {
   CreateRuleRouteSchema,
   UpdateRuleRouteSchema,
   ReorderRulesRouteSchema,
+  GetFlagRouteSchema,
 } from '@pulse-flags/types';
 import {
   buildApp,
@@ -21,6 +22,7 @@ import {
   parseResponse,
   rulesUrl,
   ruleUrl,
+  flagUrl,
   uid,
 } from '../../../../../test/helpers';
 
@@ -74,6 +76,16 @@ describe('Rule Routes', () => {
   const base = () => rulesUrl(orgSlug, projectSlug, envName, flagKey);
   const byId = (ruleId: string) => ruleUrl(orgSlug, projectSlug, envName, flagKey, ruleId);
   const reorderUrl = () => `${base()}/reorder`;
+
+  const getFlagVersion = async (key: string) => {
+    const res = await app.inject({
+      method: 'GET',
+      url: flagUrl(orgSlug, projectSlug, envName, key),
+      headers: { authorization: `Bearer ${owner.token}` },
+    });
+    const body = parseResponse(GetFlagRouteSchema.response[200], res.body);
+    return body.data.version;
+  };
 
   // ── GET /rules ──────────────────────────────────────────────────────────────
 
@@ -147,7 +159,6 @@ describe('Rule Routes', () => {
       expect(res.statusCode).toBe(201);
       const body = parseResponse(CreateRuleRouteSchema.response[201], res.body);
       expect(body.data.name).toBe('Pro Users');
-      expect(body.data.priority).toBe(0);
       expect(body.data.percentage).toBe(100);
       expect(body.data.enabled).toBe(true);
     });
@@ -221,10 +232,16 @@ describe('Rule Routes', () => {
       expect(res.statusCode).toBe(201);
     });
 
-    it('defaults priority to 0 and percentage to 100', async () => {
+    it('assigns new rules to the next priority slot', async () => {
+      const tempFlag = await createTestFlag(environmentId, owner.id, {
+        key: `priority_${uid().replace(/-/g, '_')}`,
+      });
+      await createTestRule(tempFlag.id, { priority: 0 });
+      await createTestRule(tempFlag.id, { priority: 1 });
+
       const res = await app.inject({
         method: 'POST',
-        url: base(),
+        url: rulesUrl(orgSlug, projectSlug, envName, tempFlag.key),
         headers: { authorization: `Bearer ${owner.token}` },
         payload: {
           conditions: { attribute: 'userId', op: 'eq', value: 'test' },
@@ -233,7 +250,7 @@ describe('Rule Routes', () => {
       });
       expect(res.statusCode).toBe(201);
       const body = parseResponse(CreateRuleRouteSchema.response[201], res.body);
-      expect(body.data.priority).toBe(0);
+      expect(body.data.priority).toBe(2);
       expect(body.data.percentage).toBe(100);
     });
 
@@ -419,6 +436,88 @@ describe('Rule Routes', () => {
         headers: { authorization: `Bearer ${viewerUser.token}` },
       });
       expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── Flag version bumps ───────────────────────────────────────────────────
+
+  describe('flag version bumps on rule mutations', () => {
+    it('bumps version on create', async () => {
+      const tempFlag = await createTestFlag(environmentId, owner.id, {
+        key: `bump_create_${uid().replace(/-/g, '_')}`,
+      });
+      const before = await getFlagVersion(tempFlag.key);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: rulesUrl(orgSlug, projectSlug, envName, tempFlag.key),
+        headers: { authorization: `Bearer ${owner.token}` },
+        payload: {
+          conditions: { attribute: 'plan', op: 'eq', value: 'pro' },
+          value: true,
+        },
+      });
+      expect(res.statusCode).toBe(201);
+
+      const after = await getFlagVersion(tempFlag.key);
+      expect(after).toBe(before + 1);
+    });
+
+    it('bumps version on update', async () => {
+      const tempFlag = await createTestFlag(environmentId, owner.id, {
+        key: `bump_update_${uid().replace(/-/g, '_')}`,
+      });
+      const rule = await createTestRule(tempFlag.id);
+      const before = await getFlagVersion(tempFlag.key);
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: ruleUrl(orgSlug, projectSlug, envName, tempFlag.key, rule.id),
+        headers: { authorization: `Bearer ${owner.token}` },
+        payload: { name: 'Updated' },
+      });
+      expect(res.statusCode).toBe(200);
+
+      const after = await getFlagVersion(tempFlag.key);
+      expect(after).toBe(before + 1);
+    });
+
+    it('bumps version on delete', async () => {
+      const tempFlag = await createTestFlag(environmentId, owner.id, {
+        key: `bump_delete_${uid().replace(/-/g, '_')}`,
+      });
+      const rule = await createTestRule(tempFlag.id);
+      const before = await getFlagVersion(tempFlag.key);
+
+      const res = await app.inject({
+        method: 'DELETE',
+        url: ruleUrl(orgSlug, projectSlug, envName, tempFlag.key, rule.id),
+        headers: { authorization: `Bearer ${owner.token}` },
+      });
+      expect(res.statusCode).toBe(204);
+
+      const after = await getFlagVersion(tempFlag.key);
+      expect(after).toBe(before + 1);
+    });
+
+    it('bumps version on reorder', async () => {
+      const tempFlag = await createTestFlag(environmentId, owner.id, {
+        key: `bump_reorder_${uid().replace(/-/g, '_')}`,
+      });
+      const r1 = await createTestRule(tempFlag.id, { priority: 0 });
+      const r2 = await createTestRule(tempFlag.id, { priority: 1 });
+      const before = await getFlagVersion(tempFlag.key);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `${rulesUrl(orgSlug, projectSlug, envName, tempFlag.key)}/reorder`,
+        headers: { authorization: `Bearer ${owner.token}` },
+        payload: { orderedIds: [r2.id, r1.id] },
+      });
+      expect(res.statusCode).toBe(200);
+
+      const after = await getFlagVersion(tempFlag.key);
+      expect(after).toBe(before + 1);
     });
   });
 

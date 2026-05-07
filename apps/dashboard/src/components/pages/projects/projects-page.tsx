@@ -70,13 +70,10 @@ export function ProjectsPage({ orgSlug }: { orgSlug: string }) {
 
 function ProjectCard({ orgSlug, project }: { orgSlug: string; project: ProjectResponse }) {
   const { data: environments } = useEnvironments(orgSlug, project.slug);
-  const defaultEnv = environments?.find((env) => env.isDefault)?.name
-    ?? environments?.[0]?.name
-    ?? 'staging';
 
   return (
     <Link
-      href={`/${orgSlug}/${project.slug}/${defaultEnv}/flags`}
+      href={`/${orgSlug}/${project.slug}`}
       className="rounded-md border border-border bg-surface-1 hover:border-border-strong transition-colors group cursor-pointer overflow-hidden block"
     >
       <header className="p-5 flex items-start gap-3">

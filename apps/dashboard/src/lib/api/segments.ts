@@ -4,8 +4,11 @@ import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 const base = (orgSlug: string) => `/api/v1/orgs/${orgSlug}/segments`;
 
 export const segmentsApi = {
-  list: (orgSlug: string, token?: string) =>
-    apiGet<SegmentResponse[]>(base(orgSlug), token),
+  list: (orgSlug: string, limit: number, offset: number, token?: string) =>
+    apiGet<{ items: SegmentResponse[]; total: number; limit: number; offset: number }>(
+      `${base(orgSlug)}?limit=${limit}&offset=${offset}`,
+      token
+    ),
 
   get: (orgSlug: string, segmentId: string, token?: string) =>
     apiGet<SegmentResponse>(`${base(orgSlug)}/${segmentId}`, token),

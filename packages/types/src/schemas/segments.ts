@@ -45,6 +45,15 @@ export const SegmentResponseSchema = z.object({
 });
 
 // ============================================================================
+// Querystring schemas
+// ============================================================================
+
+export const ListSegmentsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+// ============================================================================
 // Params schemas
 // ============================================================================
 
@@ -59,8 +68,16 @@ export const SegmentParamsSchema = z.object({
 
 export const ListSegmentsRouteSchema = {
   params: OrgSlugParamsSchema,
+  querystring: ListSegmentsQuerySchema,
   response: {
-    200: dataOf(z.array(SegmentResponseSchema)),
+    200: dataOf(
+      z.object({
+        items: z.array(SegmentResponseSchema),
+        total: z.number().int(),
+        limit: z.number().int(),
+        offset: z.number().int(),
+      })
+    ),
     403: ErrorResponseSchema,
     404: ErrorResponseSchema,
   },

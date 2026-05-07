@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Save,
   AlertTriangle,
@@ -15,6 +18,7 @@ import { useOrg, useUpdateOrg, useDeleteOrg } from '~/lib/hooks/use-org';
 import { useProfile, useUpdateProfile, useChangePassword } from '~/lib/hooks/use-auth';
 import { useUserOrgs } from '~/lib/hooks/use-user-orgs';
 import { ConfirmDialog } from '~/components/dialogs/confirm';
+import { CreateOrganizationSchema, UpdateUserSchema, ChangePasswordSchema } from '@pulse-flags/types';
 
 type Tab = 'profile' | 'security' | 'org-general' | 'org-danger';
 
@@ -148,40 +152,66 @@ function ProfileSection({
   saving?: boolean;
   onSave?: (values: { name: string | null; email: string; avatarUrl: string | null }) => void;
 }) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
+  const { register, handleSubmit, reset, watch } = useForm<z.infer<typeof UpdateUserSchema>>({
+    resolver: zodResolver(UpdateUserSchema),
+    defaultValues: {
+      name: profile?.name ?? null,
+      email: profile?.email ?? '',
+      avatarUrl: profile?.avatarUrl ?? null,
+    },
+  });
 
   useEffect(() => {
     if (!profile) return;
-    setName(profile.name ?? '');
-    setEmail(profile.email);
-    setAvatarUrl(profile.avatarUrl ?? '');
-  }, [profile]);
+    reset({
+      name: profile.name ?? null,
+      email: profile.email,
+      avatarUrl: profile.avatarUrl ?? null,
+    });
+  }, [profile, reset]);
 
-  const canSave = !!email;
+  const canSave = !!watch('email')?.trim();
 
   return (
     <>
       <SectionHead title="profile" subtitle="Your account details." />
       <Card label="account">
         <FieldRow label="display name" hint="Shown in audit logs and member lists.">
-          <TextInput value={name} onChange={(e) => setName(e.target.value)} />
+          <TextInput
+            {...register('name', {
+              setValueAs: (value) => {
+                const next = String(value ?? '').trim();
+                return next ? next : null;
+              },
+            })}
+          />
         </FieldRow>
         <FieldRow label="email" hint="Used for login and notifications.">
-          <TextInput type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <TextInput
+            type="email"
+            {...register('email', {
+              setValueAs: (value) => String(value ?? '').trim(),
+            })}
+          />
         </FieldRow>
         <FieldRow label="avatar URL" hint="Optional image URL.">
-          <TextInput value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} />
+          <TextInput
+            {...register('avatarUrl', {
+              setValueAs: (value) => {
+                const next = String(value ?? '').trim();
+                return next ? next : null;
+              },
+            })}
+          />
         </FieldRow>
         <ActionRow>
           <PrimaryBtn
             icon={Save}
-            onClick={() => onSave?.({
-              name: name.trim() ? name.trim() : null,
-              email: email.trim(),
-              avatarUrl: avatarUrl.trim() ? avatarUrl.trim() : null,
-            })}
+            onClick={handleSubmit((values) => onSave?.({
+              name: values.name ?? null,
+              email: values.email ?? '',
+              avatarUrl: values.avatarUrl ?? null,
+            }))}
             disabled={!canSave || saving}
           >
             {saving ? 'saving…' : 'save changes'}
@@ -199,39 +229,48 @@ function SecuritySection({
   saving?: boolean;
   onSave?: (values: { currentPassword: string; newPassword: string }) => Promise<void>;
 }) {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const mismatch = newPassword && confirmPassword && newPassword !== confirmPassword;
-  const canSave = !!currentPassword && !!newPassword && !mismatch && newPassword.length >= 8;
+  const SecuritySchema = z.object({
+    currentPassword: ChangePasswordSchema.shape.currentPassword,
+    newPassword: ChangePasswordSchema.shape.newPassword,
+    confirmPassword: z.string().min(1, 'confirm your new password'),
+  }).refine((values) => values.newPassword === values.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'passwords do not match',
+  });
+
+  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<z.infer<typeof SecuritySchema>>({
+    resolver: zodResolver(SecuritySchema),
+    defaultValues: { currentPassword: '', newPassword: '', confirmPassword: '' },
+  });
+
+  const newPassword = watch('newPassword');
+  const canSave = !!watch('currentPassword') && !!newPassword && newPassword.length >= 8 && !errors.confirmPassword;
 
   return (
     <>
       <SectionHead title="password" subtitle="Update your account password." />
       <Card label="password">
         <FieldRow label="current password">
-          <TextInput type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+          <TextInput type="password" {...register('currentPassword')} />
         </FieldRow>
         <FieldRow label="new password" hint="Minimum 8 characters.">
-          <TextInput type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+          <TextInput type="password" {...register('newPassword')} />
         </FieldRow>
-        <FieldRow label="confirm new password" hint={mismatch ? 'passwords do not match' : undefined}>
-          <TextInput type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+        <FieldRow label="confirm new password" hint={errors.confirmPassword?.message}>
+          <TextInput type="password" {...register('confirmPassword')} />
         </FieldRow>
         <ActionRow>
           <PrimaryBtn
             icon={Save}
-            onClick={async () => {
+            onClick={handleSubmit(async ({ currentPassword, newPassword }) => {
               if (!onSave) return;
               try {
                 await onSave({ currentPassword, newPassword });
-                setCurrentPassword('');
-                setNewPassword('');
-                setConfirmPassword('');
+                reset();
               } catch {
                 // Errors are surfaced by the mutation toast.
               }
-            }}
+            })}
             disabled={!canSave || saving}
           >
             {saving ? 'updating…' : 'update password'}
@@ -243,24 +282,29 @@ function SecuritySection({
 }
 
 function OrgGeneralSection({ orgSlug, orgName, orgPlan, onSave, saving }: { orgSlug: string; orgName?: string; orgPlan?: string; onSave?: (name: string) => void; saving?: boolean }) {
-  const [name, setName] = useState(orgName ?? '');
+  const { register, handleSubmit, reset, watch } = useForm<{ name: string }>({
+    resolver: zodResolver(z.object({ name: CreateOrganizationSchema.shape.name })),
+    defaultValues: { name: orgName ?? '' },
+  });
+
+  const name = watch('name');
   const planLabel = orgPlan ? orgPlan.charAt(0).toUpperCase() + orgPlan.slice(1) : 'Free';
   useEffect(() => {
-    if (orgName && name === '') setName(orgName);
-  }, [orgName, name]);
+    if (orgName) reset({ name: orgName });
+  }, [orgName, reset]);
   return (
     <>
       <SectionHead title="organization · general" subtitle="Public-facing organization details." />
       <Card label="profile">
         <FieldRow label="organization name" hint="Display name shown across the dashboard.">
-          <TextInput value={name} onChange={(e) => setName((e.target as HTMLInputElement).value)} />
+          <TextInput {...register('name')} />
         </FieldRow>
         <FieldRow label="slug" hint="Used in URLs and the API. Immutable.">
           <PrefixInput prefix="pulse.dev/" defaultValue={orgSlug} disabled />
         </FieldRow>
         <FieldRow label="plan" hint="Read-only in v1."><TextInput value={planLabel} disabled /></FieldRow>
         <ActionRow>
-          <PrimaryBtn icon={Save} onClick={() => onSave?.(name)} disabled={saving}>
+          <PrimaryBtn icon={Save} onClick={handleSubmit((values) => onSave?.(values.name.trim()))} disabled={!name?.trim() || saving}>
             {saving ? 'saving…' : 'save changes'}
           </PrimaryBtn>
         </ActionRow>

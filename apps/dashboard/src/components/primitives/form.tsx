@@ -324,3 +324,35 @@ export function TagInput({
     </div>
   );
 }
+
+// ── RHF helpers ──────────────────────────────────────────────────────────────
+import { Controller } from 'react-hook-form';
+
+export function RHFInput({ control, name, ...props }: any) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <input {...field} {...props} className={`${inputBase} ${props.className ?? ''}`} />
+      )}
+    />
+  );
+}
+
+export function RHFCheckbox({ control, name, label, hint }: any) {
+  return (
+    <Controller
+      control={control}
+      name={name}
+      render={({ field }) => (
+        <Checkbox
+          checked={!!field.value}
+          onChange={(v: boolean) => field.onChange(v)}
+          label={label}
+          hint={hint}
+        />
+      )}
+    />
+  );
+}

@@ -5,8 +5,11 @@ const base = (o: string, p: string, e: string) =>
   `/api/v1/orgs/${o}/projects/${p}/envs/${e}/flags`;
 
 export const flagsApi = {
-  list: (orgSlug: string, projectSlug: string, envName: string, token?: string) =>
-    apiGet<FlagResponse[]>(base(orgSlug, projectSlug, envName), token),
+  list: (orgSlug: string, projectSlug: string, envName: string, limit: number, offset: number, token?: string) =>
+    apiGet<{ items: FlagResponse[]; total: number; limit: number; offset: number }>(
+      `${base(orgSlug, projectSlug, envName)}?limit=${limit}&offset=${offset}`,
+      token
+    ),
 
   get: (orgSlug: string, projectSlug: string, envName: string, flagKey: string, token?: string) =>
     apiGet<FlagResponse>(`${base(orgSlug, projectSlug, envName)}/${flagKey}`, token),

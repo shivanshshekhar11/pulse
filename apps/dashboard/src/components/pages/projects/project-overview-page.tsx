@@ -148,28 +148,6 @@ export function ProjectOverviewPage({
             )}
           </section>
 
-          {/* Quick links */}
-          <section>
-            <h4 className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim mb-4">
-              // quick links
-            </h4>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'segments', href: `/${orgSlug}/segments`, icon: GitBranch, hint: 'manage user segments' },
-                { label: 'api keys', href: `/${orgSlug}/api-keys`, icon: Flag, hint: 'manage API keys' },
-                { label: 'audit log', href: `/${orgSlug}/audit`, icon: Flag, hint: 'view change history' },
-              ].map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="rounded-md border border-border bg-surface-1 p-4 hover:border-border-strong transition-colors group"
-                >
-                  <div className="font-mono text-[12.5px] mb-1">{link.label}</div>
-                  <div className="font-mono text-[11px] text-muted-foreground">{link.hint}</div>
-                </Link>
-              ))}
-            </div>
-          </section>
         </div>
       </div>
 

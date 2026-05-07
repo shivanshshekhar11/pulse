@@ -8,23 +8,25 @@ export function Dialog({
   onClose,
   children,
   size = 'md',
+  dismissable = true,
 }: {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  dismissable?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
+    if (dismissable) document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      document.removeEventListener('keydown', onKey);
+      if (dismissable) document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open, onClose, dismissable]);
 
   if (!open) return null;
 
@@ -39,7 +41,7 @@ export function Dialog({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div
         className="absolute inset-0 bg-background/80 backdrop-blur-sm overlay-in"
-        onClick={onClose}
+        onClick={dismissable ? onClose : undefined}
       />
       <div
         role="dialog"

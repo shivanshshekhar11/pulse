@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { rules } from '../db/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 import { redis } from '../lib/redis';
 import type { CreateRule, UpdateRule } from '@pulse-flags/types';
 
@@ -18,12 +18,19 @@ export async function findRule(flagId: string, ruleId: string) {
 }
 
 export async function createRule(flagId: string, data: CreateRule) {
+  const result = await db
+    .select({ maxPriority: sql<number>`coalesce(max(${rules.priority}), -1)` })
+    .from(rules)
+    .where(eq(rules.flagId, flagId));
+  const maxPriority = result[0]?.maxPriority ?? -1;
+  const nextPriority = maxPriority + 1;
+
   const [rule] = await db
     .insert(rules)
     .values({
       flagId,
       name: data.name ?? null,
-      priority: data.priority ?? 0,
+      priority: nextPriority,
       conditions: data.conditions,
       percentage: data.percentage ?? 100,
       value: data.value,

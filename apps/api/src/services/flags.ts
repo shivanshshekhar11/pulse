@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { flags } from '../db/schema';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, count } from 'drizzle-orm';
 import { redis } from '../lib/redis';
 import type { CreateFlag, UpdateFlag } from '@pulse-flags/types';
 
@@ -11,12 +11,23 @@ function castFlag<T extends { type: string }>(flag: T): Omit<T, 'type'> & { type
   return { ...flag, type: flag.type as FlagType };
 }
 
-export async function listFlags(environmentId: string) {
-  const rows = await db.query.flags.findMany({
-    where: eq(flags.environmentId, environmentId),
-    orderBy: (f, { desc }) => [desc(f.createdAt)],
-  });
-  return rows.map(castFlag);
+export async function listFlags(environmentId: string, limit: number, offset: number) {
+  const [items, [totals]] = await Promise.all([
+    db.query.flags.findMany({
+      where: eq(flags.environmentId, environmentId),
+      orderBy: (f, { desc }) => [desc(f.createdAt)],
+      limit,
+      offset,
+    }),
+    db.select({ total: count() }).from(flags).where(eq(flags.environmentId, environmentId)),
+  ]);
+
+  return {
+    items: items.map(castFlag),
+    total: totals?.total ?? 0,
+    limit,
+    offset,
+  };
 }
 
 export async function findFlagByKey(environmentId: string, key: string) {
@@ -75,6 +86,20 @@ export async function updateFlag(flagId: string, data: UpdateFlag) {
 
 export async function deleteFlag(flagId: string) {
   await db.delete(flags).where(eq(flags.id, flagId));
+}
+
+/**
+ * Increments the flag version when rules mutate.
+ * This is separate from optimistic-locking updates.
+ */
+export async function bumpFlagVersion(flagId: string) {
+  const [updated] = await db
+    .update(flags)
+    .set({ version: sql`${flags.version} + 1`, updatedAt: new Date() })
+    .where(eq(flags.id, flagId))
+    .returning();
+
+  return updated ? castFlag(updated) : null;
 }
 
 /** Publishes a ruleset change event to all connected SDK clients for this environment. */

@@ -11,6 +11,7 @@ import { assertPermission } from '../../../../lib/rbac';
 import { writeAuditLog } from '../../../../lib/audit';
 import { resolveFlag } from '../../../../lib/resolvers';
 import * as ruleService from '../../../../services/rules';
+import * as flagService from '../../../../services/flags';
 
 export default async function ruleRoutes(fastify: FastifyInstance) {
   const f = fastify.withTypeProvider<ZodTypeProvider>();
@@ -64,6 +65,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
       ip: request.ip,
     });
 
+    await flagService.bumpFlagVersion(ctx.flag.id);
+
     await ruleService.publishRuleChange(ctx.environment.id, ctx.flag.id, rule.id, 'rule.created');
 
     return reply.code(201).send({ data: rule });
@@ -107,6 +110,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
       ip: request.ip,
     });
 
+    await flagService.bumpFlagVersion(ctx.flag.id);
+
     await ruleService.publishRuleChange(ctx.environment.id, ctx.flag.id, rule.id, 'rule.updated');
 
     return reply.send({ data: updated });
@@ -146,6 +151,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
       oldValue: rule,
       ip: request.ip,
     });
+
+    await flagService.bumpFlagVersion(ctx.flag.id);
 
     await ruleService.publishRuleChange(ctx.environment.id, ctx.flag.id, rule.id, 'rule.deleted');
 
@@ -191,6 +198,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
       newValue: { orderedIds },
       ip: request.ip,
     });
+
+    await flagService.bumpFlagVersion(ctx.flag.id);
 
     await ruleService.publishRuleChange(
       ctx.environment.id,

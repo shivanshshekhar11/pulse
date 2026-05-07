@@ -12,7 +12,13 @@ import { RuleDialog } from '~/components/dialogs/rule-dialog';
 import { FlagDialog } from '~/components/dialogs/flag-dialog';
 import { ConfirmDialog } from '~/components/dialogs/confirm';
 import { useFlag, useUpdateFlag, useDeleteFlag } from '~/lib/hooks/use-flags';
-import { useRules, useCreateRule, useUpdateRule, useReorderRules } from '~/lib/hooks/use-rules';
+import {
+  useRules,
+  useCreateRule,
+  useUpdateRule,
+  useReorderRules,
+  useDeleteRule,
+} from '~/lib/hooks/use-rules';
 import { useAuditLogs } from '~/lib/hooks/use-audit';
 import type { RuleResponse, AuditLogResponse } from '@pulse-flags/types';
 
@@ -49,6 +55,7 @@ export function FlagDetailPage({
   const createRule = useCreateRule(orgSlug, projectSlug, envName, flagKey);
   const updateRule = useUpdateRule(orgSlug, projectSlug, envName, flagKey);
   const reorderRules = useReorderRules(orgSlug, projectSlug, envName, flagKey);
+  const deleteRule = useDeleteRule(orgSlug, projectSlug, envName, flagKey);
   const { data: auditPage } = useAuditLogs(orgSlug, { limit: 5 });
   const updateFlag = useUpdateFlag(orgSlug, projectSlug, envName, flagKey);
   const deleteFlag = useDeleteFlag(orgSlug, projectSlug, envName);
@@ -56,6 +63,7 @@ export function FlagDetailPage({
   const [editFlagOpen, setEditFlagOpen] = useState(false);
   const [addRuleOpen, setAddRuleOpen] = useState(false);
   const [editRuleId, setEditRuleId] = useState<string | null>(null);
+  const [deleteRuleId, setDeleteRuleId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [orderedRules, setOrderedRules] = useState<RuleResponse[]>([]);
@@ -63,6 +71,7 @@ export function FlagDetailPage({
 
   // Find the rule being edited so we can pre-populate the dialog
   const editRule = editRuleId ? (rules ?? []).find((r) => r.id === editRuleId) : null;
+  const deleteRuleTarget = deleteRuleId ? (rules ?? []).find((r) => r.id === deleteRuleId) : null;
 
   useEffect(() => {
     if (rules) setOrderedRules(rules);
@@ -221,6 +230,7 @@ export function FlagDetailPage({
                         );
                       }}
                       onEdit={() => setEditRuleId(rule.id)}
+                      onDelete={() => setDeleteRuleId(rule.id)}
                     />
                   ))}
                 </div>
@@ -231,11 +241,11 @@ export function FlagDetailPage({
               <pre className="font-mono text-[12.5px] p-5 rounded-md bg-surface-1 border border-border overflow-x-auto leading-relaxed">
                 <span className="text-muted-foreground">{'// in-memory · zero-latency\n'}</span>
                 <span className="text-magenta">const</span>{' '}
-                <span className="text-foreground">show</span>{' '}
+                <span className="text-foreground">{flag.type === 'boolean' ? 'enabled' : 'value'}</span>{' '}
                 <span className="text-muted-foreground">=</span>{' '}
                 <span className="text-foreground">client</span>
                 <span className="text-muted-foreground">.</span>
-                <span className="text-info">isEnabled</span>
+                <span className="text-info">{flag.type === 'boolean' ? 'isEnabled' : 'getVariant'}</span>
                 <span className="text-muted-foreground">{'(\n'}</span>
                 {'  '}<span className="text-warning">'{flag.key}'</span>
                 <span className="text-muted-foreground">,</span>
@@ -288,13 +298,38 @@ export function FlagDetailPage({
         onClose={() => setEditFlagOpen(false)}
         mode="edit"
         loading={updateFlag.isPending}
-        initial={{ name: flag.name, key: flag.key, type: flag.type, description: flag.description ?? '', tags: flag.tags }}
+        initial={{
+          name: flag.name,
+          key: flag.key,
+          type: flag.type,
+          description: flag.description ?? '',
+          tags: flag.tags,
+          defaultValue: flag.defaultValue,
+        }}
         onSubmit={(values) => {
           updateFlag.mutate(
-            { version: flag.version, name: values.name, description: values.description, tags: values.tags },
+            {
+              version: flag.version,
+              name: values.name,
+              description: values.description,
+              tags: values.tags,
+              defaultValue: values.defaultValue,
+            },
             { onSuccess: () => setEditFlagOpen(false) },
           );
         }}
+      />
+      <ConfirmDialog
+        open={deleteRuleId !== null}
+        onClose={() => setDeleteRuleId(null)}
+        title={deleteRuleTarget ? `Delete rule "${deleteRuleTarget.name || 'Untitled rule'}"` : 'Delete rule'}
+        description="This rule will be permanently removed from the flag."
+        confirmLabel="delete rule"
+        onConfirm={() => {
+          if (!deleteRuleId) return;
+          deleteRule.mutate(deleteRuleId, { onSuccess: () => setDeleteRuleId(null) });
+        }}
+        consequences={['Rule removed immediately', 'Targeting will fall back to the next rule or default']}
       />
       <RuleDialog
         open={addRuleOpen}
@@ -385,6 +420,7 @@ function RuleCard({
   index,
   rule,
   onEdit,
+  onDelete,
   draggable,
   dragActive,
   onDragStart,
@@ -394,6 +430,7 @@ function RuleCard({
   index: number;
   rule: RuleResponse;
   onEdit?: () => void;
+  onDelete?: () => void;
   draggable?: boolean;
   dragActive?: boolean;
   onDragStart?: () => void;
@@ -418,6 +455,8 @@ function RuleCard({
     >
       <div className="flex items-center gap-2.5 px-4 py-2.5 bg-surface-2 border-b border-border font-mono text-[11.5px]">
         <span className="text-dim">#{index}</span>
+        <span className="text-muted-foreground">name</span>
+        <span className="text-foreground truncate max-w-[200px]">{rule.name || 'Untitled rule'}</span>
         <span className="text-muted-foreground">priority</span>
         <span className="text-foreground">{rule.priority}</span>
         {draggable && (
@@ -429,6 +468,11 @@ function RuleCard({
         {onEdit && (
           <button type="button" onClick={onEdit} className="ml-2 flex items-center gap-1 text-[10.5px] text-muted-foreground hover:text-foreground">
             <Pencil className="size-3" /> edit
+          </button>
+        )}
+        {onDelete && (
+          <button type="button" onClick={onDelete} className="ml-2 flex items-center gap-1 text-[10.5px] text-destructive hover:text-destructive">
+            <Trash2 className="size-3" /> delete
           </button>
         )}
       </div>

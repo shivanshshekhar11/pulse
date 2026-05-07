@@ -362,6 +362,6 @@ export default async function orgRoutes(fastify: FastifyInstance) {
       ip: request.ip,
     });
 
-    return reply.code(204).send();
+    return reply.code(204).send(null);
   });
 }

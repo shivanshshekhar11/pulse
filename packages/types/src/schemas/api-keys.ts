@@ -25,11 +25,18 @@ export const SelectApiKeySchema = z.object({
 // Request schemas
 // ============================================================================
 
+const NullableDateSchema = z.preprocess((value) => {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return value;
+  if (typeof value === 'string' || typeof value === 'number') return new Date(value);
+  return value;
+}, z.date().nullable());
+
 export const CreateApiKeySchema = z.object({
   name: z.string().min(1).max(128),
   environmentId: z.string().uuid(),
   scopes: z.array(z.enum(['read', 'write'])).default(['read']),
-  expiresAt: z.date().nullable().optional(),
+  expiresAt: NullableDateSchema.optional(),
 });
 
 // ============================================================================
