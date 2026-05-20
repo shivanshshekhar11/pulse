@@ -1,11 +1,11 @@
-import type { Metadata } from 'next';
+﻿import type { Metadata } from 'next';
 import { Providers } from '~/components/providers';
 import '~/styles/globals.css';
 
 export const metadata: Metadata = {
   title: {
     template: '%s | Pulse',
-    default: 'Pulse — Feature Flags',
+    default: 'Pulse â€” Feature Flags',
   },
   description: 'Self-hostable, multi-tenant feature flag service.',
 };

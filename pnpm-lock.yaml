@@ -199,9 +199,15 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      lucide-react:
+        specifier: ^0.487.0
+        version: 0.487.0(react@19.2.5)
       react:
         specifier: ^19.0.0
         version: 19.2.5
+      react-hook-form:
+        specifier: ^7.75.0
+        version: 7.75.0(react@19.2.5)
       tailwind-merge:
         specifier: ^3.2.0
         version: 3.5.0

@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useSession, signOut } from 'next-auth/react';
 import {
   User, LogOut,
 } from 'lucide-react';
-import { Popover, PopoverItem, PopoverSeparator } from '~/components/primitives/popover';
+import { Popover, PopoverItem, PopoverSeparator } from '@pulse-flags/ui';
 
 export function UserMenuPopover({
   open,
@@ -60,7 +60,7 @@ export function UserMenuPopover({
       </div>
       <PopoverSeparator />
       <div className="py-1">
-        <PopoverItem icon={LogOut} label="sign out" danger hint="⌘⇧Q" onClick={handleSignOut} />
+        <PopoverItem icon={LogOut} label="sign out" danger hint="âŒ˜â‡§Q" onClick={handleSignOut} />
       </div>
     </Popover>
   );

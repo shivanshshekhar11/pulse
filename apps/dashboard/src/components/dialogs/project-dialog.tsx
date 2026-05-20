@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -7,10 +7,10 @@ import { z } from 'zod';
 import { Plus, Save, Trash2 } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
-} from '~/components/primitives/dialog';
+} from '@pulse-flags/ui';
 import {
   Field, Input, Button, Checkbox,
-} from '~/components/primitives/form';
+} from '@pulse-flags/ui';
 import { CreateProjectSchema, CreateEnvironmentSchema } from '@pulse-flags/types';
 
 const ENV_LIMIT = 5;
@@ -200,7 +200,7 @@ export function ProjectDialog({
           disabled={!canSubmit || loading}
           onClick={handleSubmit(onValid)}
         >
-          {loading ? 'saving…' : mode === 'create' ? 'create project' : 'save changes'}
+          {loading ? 'savingâ€¦' : mode === 'create' ? 'create project' : 'save changes'}
         </Button>
       </DialogFooter>
     </Dialog>
@@ -279,7 +279,7 @@ export function EnvironmentDialog({
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" icon={Plus} disabled={!watch('name') || loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'creating…' : 'create'}
+          {loading ? 'creatingâ€¦' : 'create'}
         </Button>
       </DialogFooter>
     </Dialog>

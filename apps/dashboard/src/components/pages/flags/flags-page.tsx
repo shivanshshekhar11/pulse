@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -58,7 +58,7 @@ export function FlagsPage({
 
   const lastSync = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString('en-US', { hour12: false })
-    : '—';
+    : 'â€”';
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -96,7 +96,7 @@ export function FlagsPage({
       {/* Table header */}
       <div className="grid grid-cols-[28px_1fr_140px_180px_200px_64px] gap-6 px-6 py-3 border-b border-border bg-surface-0/50 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
         <div />
-        <div>flag · key</div>
+        <div>flag Â· key</div>
         <div>type</div>
         <div>status</div>
         <div>updated</div>
@@ -108,12 +108,12 @@ export function FlagsPage({
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading flags…</span>
+            <span className="font-mono text-[12px]">loading flagsâ€¦</span>
           </div>
         ) : flags.length === 0 ? (
           <div className="px-6 py-16 text-center font-mono text-[12px] text-dim">
             <span className="text-primary">$</span> no flags found
-            <> · <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button></>
+            <> Â· <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button></>
           </div>
         ) : (
           <>

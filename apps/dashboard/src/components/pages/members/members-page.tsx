@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Plus, Crown, Shield, User as UserIcon, Eye, MoreHorizontal, Loader2 } from 'lucide-react';
@@ -73,7 +73,7 @@ export function MembersPage({ orgSlug }: { orgSlug: string }) {
             {isLoading ? (
               <div className="flex items-center justify-center py-16 text-muted-foreground">
                 <Loader2 className="size-5 animate-spin mr-2" />
-                <span className="font-mono text-[12px]">loading members…</span>
+                <span className="font-mono text-[12px]">loading membersâ€¦</span>
               </div>
             ) : (
               <div className="rounded-md border border-border bg-surface-1 overflow-hidden">

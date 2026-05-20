@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -10,14 +10,14 @@ import {
 } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
-} from '~/components/primitives/dialog';
+} from '@pulse-flags/ui';
 import {
   Field, Input, Button, Checkbox, Select,
-} from '~/components/primitives/form';
+} from '@pulse-flags/ui';
 
 // Fallback shown while real environments are loading
 const FALLBACK_ENV_OPTIONS = [
-  { value: '', label: 'loading environments…' },
+  { value: '', label: 'loading environmentsâ€¦' },
 ];
 
 const EXPIRY_OPTIONS = [
@@ -143,7 +143,7 @@ export function ApiKeyDialog({
                 <Select value={watch('environmentId') ?? ''} onChange={(v) => setValue('environmentId', v)} options={envOptions} />
               ) : (
                 <div className="w-full px-3 py-2 bg-surface-0 border border-border rounded-md text-[13px] text-muted-foreground font-mono">
-                  loading environments…
+                  loading environmentsâ€¦
                 </div>
               )}
             </Field>
@@ -159,7 +159,7 @@ export function ApiKeyDialog({
                     setValue('scopes', next as any);
                   }}
                   label="read"
-                  hint="evaluate flags · read ruleset · open stream"
+                  hint="evaluate flags Â· read ruleset Â· open stream"
                 />
                 <Checkbox
                   checked={currentScopes.includes('write')}
@@ -170,7 +170,7 @@ export function ApiKeyDialog({
                     setValue('scopes', next as any);
                   }}
                   label="write"
-                  hint="mutate flags and rules · use sparingly · never embed in clients"
+                  hint="mutate flags and rules Â· use sparingly Â· never embed in clients"
                 />
               </div>
             </Field>
@@ -202,7 +202,7 @@ export function ApiKeyDialog({
               />
             </Field>
           </DialogBody>
-          <DialogFooter hint="key format: ps_(live|test)_<40 hex chars> · stored as SHA-256">
+          <DialogFooter hint="key format: ps_(live|test)_<40 hex chars> Â· stored as SHA-256">
             <Button variant="ghost" onClick={handleClose}>cancel</Button>
             <Button
               variant="primary"
@@ -210,7 +210,7 @@ export function ApiKeyDialog({
               disabled={!canCreate || loading || !environments || environments.length === 0}
               onClick={handleSubmit(onValid)}
             >
-              {loading ? 'generating…' : 'generate'}
+              {loading ? 'generatingâ€¦' : 'generate'}
             </Button>
           </DialogFooter>
         </>
@@ -233,7 +233,7 @@ export function ApiKeyDialog({
             <div className="rounded-md border border-border bg-surface-0 p-3 flex items-center gap-2 font-mono text-[12.5px]">
               <KeyRound className="size-3.5 text-warning shrink-0" />
               <span className="flex-1 truncate">
-                {reveal ? displayKey : displayKey.slice(0, 12) + '•'.repeat(40)}
+                {reveal ? displayKey : displayKey.slice(0, 12) + 'â€¢'.repeat(40)}
               </span>
               <button
                 type="button"
@@ -259,7 +259,7 @@ export function ApiKeyDialog({
 
           </DialogBody>
           <DialogFooter>
-            <Button variant="primary" onClick={handleClose}>I&apos;ve saved it — close</Button>
+            <Button variant="primary" onClick={handleClose}>I&apos;ve saved it â€” close</Button>
           </DialogFooter>
         </>
       )}

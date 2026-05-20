@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -7,16 +7,16 @@ import { z } from 'zod';
 import { Hash, ToggleLeft, Braces, Type, Save, Plus } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
-} from '~/components/primitives/dialog';
+} from '@pulse-flags/ui';
 import {
   Field, Input, Textarea, Button, TagInput,
-} from '~/components/primitives/form';
+} from '@pulse-flags/ui';
 import { CreateFlagSchema } from '@pulse-flags/types';
 
 const TYPES = [
   { value: 'boolean' as const, label: 'boolean', hint: 'on/off toggle', icon: ToggleLeft },
-  { value: 'string' as const, label: 'string', hint: 'text variant — e.g. CTA copy', icon: Type },
-  { value: 'number' as const, label: 'number', hint: 'numeric config — e.g. timeout ms', icon: Hash },
+  { value: 'string' as const, label: 'string', hint: 'text variant â€” e.g. CTA copy', icon: Type },
+  { value: 'number' as const, label: 'number', hint: 'numeric config â€” e.g. timeout ms', icon: Hash },
   { value: 'json' as const, label: 'json', hint: 'arbitrary structured config', icon: Braces },
 ];
 
@@ -151,7 +151,7 @@ export function FlagDialog({
               }}
             />
           </Field>
-          <Field label="key" required hint="snake_case · immutable" error={keyError}>
+          <Field label="key" required hint="snake_case Â· immutable" error={keyError}>
             <Input
               mono
               placeholder="new_checkout_flow"
@@ -235,7 +235,7 @@ export function FlagDialog({
           </div>
         )}
       </DialogBody>
-      <DialogFooter hint={mode === 'create' ? 'creates with version=1, audit logged' : 'increments version · audit logged'}>
+      <DialogFooter hint={mode === 'create' ? 'creates with version=1, audit logged' : 'increments version Â· audit logged'}>
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button
           variant="primary"
@@ -243,7 +243,7 @@ export function FlagDialog({
           disabled={!canSubmit || loading}
           onClick={handleSubmit(handleSubmitInternal)}
         >
-          {loading ? 'saving…' : mode === 'create' ? 'create flag' : 'save changes'}
+          {loading ? 'savingâ€¦' : mode === 'create' ? 'create flag' : 'save changes'}
         </Button>
       </DialogFooter>
     </Dialog>

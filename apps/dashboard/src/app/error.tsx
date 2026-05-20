@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { Button } from '~/components/primitives/form';
+import { Button } from '@pulse-flags/ui';
 
 export default function GlobalError({
   error,

@@ -1,4 +1,4 @@
-import type { SegmentResponse, CreateSegment, UpdateSegment } from '@pulse-flags/types';
+﻿import type { SegmentResponse, CreateSegment, UpdateSegment } from '@pulse-flags/types';
 import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 
 const base = (orgSlug: string) => `/api/v1/orgs/${orgSlug}/segments`;

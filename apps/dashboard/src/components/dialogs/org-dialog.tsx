@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -7,8 +7,8 @@ import { z } from 'zod';
 import { Plus } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
-} from '~/components/primitives/dialog';
-import { Field, Input, Button } from '~/components/primitives/form';
+} from '@pulse-flags/ui';
+import { Field, Input, Button } from '@pulse-flags/ui';
 import { CreateOrganizationSchema } from '@pulse-flags/types';
 
 export interface OrgFormValues {
@@ -71,7 +71,7 @@ export function OrgDialog({
               }}
             />
           </Field>
-          <Field label="slug" required hint="lowercase · hyphens" error={slugError}>
+          <Field label="slug" required hint="lowercase Â· hyphens" error={slugError}>
             <Input
               mono
               placeholder="acme-corp"
@@ -83,7 +83,7 @@ export function OrgDialog({
       <DialogFooter>
         {dismissable ? <Button variant="ghost" onClick={onClose}>cancel</Button> : <span />}
         <Button variant="primary" icon={Plus} disabled={!canSubmit || loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'creating…' : 'create organization'}
+          {loading ? 'creatingâ€¦' : 'create organization'}
         </Button>
       </DialogFooter>
     </Dialog>

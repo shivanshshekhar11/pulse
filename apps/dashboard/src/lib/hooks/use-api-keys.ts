@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
@@ -27,7 +27,7 @@ export function useCreateApiKey(orgSlug: string) {
     mutationFn: (body: CreateApiKey) => apiKeysApi.create(orgSlug, body, token),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['api-keys', orgSlug] });
-      // Don't toast here — the caller shows the one-time reveal dialog
+      // Don't toast here â€” the caller shows the one-time reveal dialog
     },
     onError: (err) => {
       toast.error(err instanceof ApiError ? err.message : 'Failed to generate key');

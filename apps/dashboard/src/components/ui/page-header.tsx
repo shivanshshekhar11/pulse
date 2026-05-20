@@ -1,6 +1,6 @@
-/**
- * PageHeader — consistent page title block used across all pages.
- * Server Component — no interactivity needed here.
+﻿/**
+ * PageHeader â€” consistent page title block used across all pages.
+ * Server Component â€” no interactivity needed here.
  */
 export function PageHeader({
   crumb,

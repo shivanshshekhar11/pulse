@@ -1,4 +1,4 @@
-import type { AuditLogResponse } from '@pulse-flags/types';
+﻿import type { AuditLogResponse } from '@pulse-flags/types';
 import { apiGet } from './client';
 
 export interface AuditLogPage {

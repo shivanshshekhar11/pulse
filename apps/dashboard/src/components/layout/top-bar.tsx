@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -10,7 +10,7 @@ import { UserMenuPopover } from '~/components/popovers/user-menu';
 import { FlagDialog } from '~/components/dialogs/flag-dialog';
 import { useEnvironments } from '~/lib/hooks/use-projects';
 
-// These are known org-level route segments — not project slugs.
+// These are known org-level route segments â€” not project slugs.
 const ORG_SEGMENTS = new Set([
   'segments', 'api-keys', 'members', 'audit', 'settings', 'projects',
 ]);
@@ -87,7 +87,7 @@ export function TopBar() {
           )}
         </div>
 
-        {/* Environment tabs — only inside a project */}
+        {/* Environment tabs â€” only inside a project */}
         {isProjectRoute && envList.length > 0 && (
           <div className="ml-6 flex items-center gap-1 p-0.5 bg-surface-1 rounded-md border border-border">
             {envList.map((env) => (
@@ -112,7 +112,7 @@ export function TopBar() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {/* New flag — only when inside a project env */}
+          {/* New flag â€” only when inside a project env */}
           {isProjectRoute && projectSlug && envName && (
             <button
               type="button"

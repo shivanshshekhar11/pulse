@@ -1,9 +1,5 @@
-/**
- * @pulse-flags/ui — shared shadcn/ui component library.
- *
- * Components are added here as they are needed by apps/dashboard
- * and apps/example. Each component is a thin wrapper around a
- * Radix UI primitive, styled with Tailwind CSS v4.
- */
-
-export { cn } from './lib/cn';
+﻿export { cn } from './lib/cn';
+export { Dialog, DialogHeader, DialogBody, DialogFooter } from './dialog';
+export { Field, Input, Select, Button, Textarea, Radio, Checkbox, TagInput, RHFInput, RHFCheckbox } from './form';
+export { Popover, PopoverItem, PopoverSeparator, PopoverHeader } from './popover';
+export { Toggle } from './toggle';

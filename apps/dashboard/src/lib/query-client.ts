@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 
 import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 /**
  * Singleton QueryClient for the dashboard.
- * Created once per browser session — not per request.
+ * Created once per browser session â€” not per request.
  *
  * Stale time of 30s means data is considered fresh for 30 seconds after
  * fetching, reducing redundant network calls when navigating between pages.
@@ -41,7 +41,7 @@ export function makeQueryClient() {
         staleTime: 30_000,
         refetchOnWindowFocus: false, // Prevent aggressive re-fetching
         retry: (failureCount, error) => {
-          // Don't retry on 401/403/404 — these are deterministic
+          // Don't retry on 401/403/404 â€” these are deterministic
           if (error instanceof Error && 'status' in error) {
             const status = (error as { status: number }).status;
             if (status === 401 || status === 403 || status === 404) return false;

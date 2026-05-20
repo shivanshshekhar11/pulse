@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
+﻿import { Suspense } from 'react';
 import { AppSidebar } from './app-sidebar';
 import { TopBar } from './top-bar';
 
 /**
- * AppShell — the persistent chrome around every authenticated page.
+ * AppShell â€” the persistent chrome around every authenticated page.
  *
  * AppSidebar and TopBar are "use client" components that call usePathname().
  * In Next.js 16, usePathname() is considered dynamic data during prerender.

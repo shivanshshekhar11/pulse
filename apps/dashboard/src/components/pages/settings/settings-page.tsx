@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -127,7 +127,7 @@ export function SettingsPage({ orgSlug }: { orgSlug: string }) {
   );
 }
 
-// ── Nav item ──────────────────────────────────────────────────────────────────
+// â”€â”€ Nav item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SettingsNavItem({ tab, active, onClick }: { tab: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }; active: boolean; onClick: () => void }) {
   const Icon = tab.icon;
@@ -141,7 +141,7 @@ function SettingsNavItem({ tab, active, onClick }: { tab: { id: Tab; label: stri
   );
 }
 
-// ── Section components ────────────────────────────────────────────────────────
+// â”€â”€ Section components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ProfileSection({
   profile,
@@ -214,7 +214,7 @@ function ProfileSection({
             }))}
             disabled={!canSave || saving}
           >
-            {saving ? 'saving…' : 'save changes'}
+            {saving ? 'savingâ€¦' : 'save changes'}
           </PrimaryBtn>
         </ActionRow>
       </Card>
@@ -273,7 +273,7 @@ function SecuritySection({
             })}
             disabled={!canSave || saving}
           >
-            {saving ? 'updating…' : 'update password'}
+            {saving ? 'updatingâ€¦' : 'update password'}
           </PrimaryBtn>
         </ActionRow>
       </Card>
@@ -294,7 +294,7 @@ function OrgGeneralSection({ orgSlug, orgName, orgPlan, onSave, saving }: { orgS
   }, [orgName, reset]);
   return (
     <>
-      <SectionHead title="organization · general" subtitle="Public-facing organization details." />
+      <SectionHead title="organization Â· general" subtitle="Public-facing organization details." />
       <Card label="profile">
         <FieldRow label="organization name" hint="Display name shown across the dashboard.">
           <TextInput {...register('name')} />
@@ -305,7 +305,7 @@ function OrgGeneralSection({ orgSlug, orgName, orgPlan, onSave, saving }: { orgS
         <FieldRow label="plan" hint="Read-only in v1."><TextInput value={planLabel} disabled /></FieldRow>
         <ActionRow>
           <PrimaryBtn icon={Save} onClick={handleSubmit((values) => onSave?.(values.name.trim()))} disabled={!name?.trim() || saving}>
-            {saving ? 'saving…' : 'save changes'}
+            {saving ? 'savingâ€¦' : 'save changes'}
           </PrimaryBtn>
         </ActionRow>
       </Card>
@@ -331,7 +331,7 @@ function OrgDangerSection({ onDelete }: { onDelete?: () => void }) {
   );
 }
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
+// â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function SectionHead({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (

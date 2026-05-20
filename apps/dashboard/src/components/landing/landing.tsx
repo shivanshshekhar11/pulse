@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import {
@@ -19,10 +19,10 @@ import { Architecture } from './architecture';
 const FEATURES = [
   { icon: Zap, color: 'primary', title: 'Local evaluation', desc: 'SDK downloads the ruleset once and evaluates in memory. Sub-millisecond flag checks, zero per-request network calls.' },
   { icon: Radio, color: 'info', title: 'Real-time SSE', desc: 'Redis Pub/Sub fans out flag changes to every connected SDK in under 200ms. No polling, no stale state.' },
-  { icon: GitBranch, color: 'magenta', title: 'Custom rule engine', desc: 'Recursive AND/OR/NOT trees with operators for equality, ranges, regex, and reusable segments — modeled as data, not code.' },
-  { icon: Hash, color: 'warning', title: 'Consistent hashing', desc: 'SHA-256(flagKey:userId) % 100 buckets users deterministically. Same user, same variant, every time — no DB lookup.' },
-  { icon: Shield, color: 'primary', title: 'Multi-tenant RBAC', desc: 'Org → Project → Environment hierarchy with two-level role overrides. Environment-scoped API keys from day one.' },
-  { icon: Layers, color: 'info', title: 'Three-tier fallback', desc: 'In-memory → cached snapshot → developer defaults. Your app never breaks, even during network partitions.' },
+  { icon: GitBranch, color: 'magenta', title: 'Custom rule engine', desc: 'Recursive AND/OR/NOT trees with operators for equality, ranges, regex, and reusable segments â€” modeled as data, not code.' },
+  { icon: Hash, color: 'warning', title: 'Consistent hashing', desc: 'SHA-256(flagKey:userId) % 100 buckets users deterministically. Same user, same variant, every time â€” no DB lookup.' },
+  { icon: Shield, color: 'primary', title: 'Multi-tenant RBAC', desc: 'Org â†’ Project â†’ Environment hierarchy with two-level role overrides. Environment-scoped API keys from day one.' },
+  { icon: Layers, color: 'info', title: 'Three-tier fallback', desc: 'In-memory â†’ cached snapshot â†’ developer defaults. Your app never breaks, even during network partitions.' },
 ] as const;
 
 const STATS = [
@@ -50,7 +50,7 @@ const client = new PulseClient({
 
 await client.connect();
 
-// in-memory · zero-latency · always-on
+// in-memory Â· zero-latency Â· always-on
 const show = client.isEnabled('new_dashboard', {
   userId, country, plan,
 });`;
@@ -113,7 +113,7 @@ export function Landing() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-surface-1 font-mono text-[11px] text-muted-foreground fade-up">
               <span className="size-1.5 rounded-full bg-primary live-dot" />
-              v0.1.0 · sdk available on npm
+              v0.1.0 Â· sdk available on npm
             </div>
 
             <h1
@@ -199,8 +199,8 @@ export function Landing() {
             judgment
           </h2>
           <p className="mt-4 text-[14px] text-muted-foreground">
-            Every primitive — local evaluation, deterministic bucketing,
-            optimistic locking — chosen because it solves a real
+            Every primitive â€” local evaluation, deterministic bucketing,
+            optimistic locking â€” chosen because it solves a real
             distributed-systems problem.
           </p>
         </div>
@@ -267,9 +267,9 @@ export function Landing() {
             <ul className="space-y-3 font-mono text-[12.5px]">
               {[
                 ['connect()', 'fetches the ruleset, opens an SSE channel'],
-                ['isEnabled()', 'evaluates locally — sub-ms, no network'],
+                ['isEnabled()', 'evaluates locally â€” sub-ms, no network'],
                 ["on('flag:updated')", 'react to changes the instant they happen'],
-                ['close()', 'graceful teardown — cancels reconnect, drains queue'],
+                ['close()', 'graceful teardown â€” cancels reconnect, drains queue'],
               ].map(([fn, desc]) => (
                 <li key={fn} className="flex items-baseline gap-3">
                   <span className="text-primary">{fn}</span>
@@ -398,7 +398,7 @@ export function Landing() {
               // project
             </div>
             <ul className="space-y-2 text-muted-foreground">
-              {['github', 'roadmap', 'license · MIT', 'self-host'].map((i) => (
+              {['github', 'roadmap', 'license Â· MIT', 'self-host'].map((i) => (
                 <li key={i}>{i}</li>
               ))}
             </ul>
@@ -406,7 +406,7 @@ export function Landing() {
         </div>
         <div className="border-t border-border">
           <div className="max-w-[1200px] mx-auto px-8 py-5 flex items-center justify-between font-mono text-[11px] text-dim">
-            <span>// © 2026 pulse · all systems operational</span>
+            <span>// Â© 2026 pulse Â· all systems operational</span>
             <span className="flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-primary live-dot" />
               uptime 99.99%

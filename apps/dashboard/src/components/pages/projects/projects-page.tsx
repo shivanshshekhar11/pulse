@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -31,11 +31,11 @@ export function ProjectsPage({ orgSlug }: { orgSlug: string }) {
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading projects…</span>
+            <span className="font-mono text-[12px]">loading projectsâ€¦</span>
           </div>
         ) : !projects || projects.length === 0 ? (
           <div className="text-center py-20 font-mono text-[12px] text-dim">
-            // no projects yet ·{' '}
+            // no projects yet Â·{' '}
             <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button>
           </div>
         ) : (

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
@@ -65,7 +65,7 @@ export function useUpdateFlag(orgSlug: string, projectSlug: string, envName: str
     },
     onError: (err) => {
       if (err instanceof ApiError && err.status === 409) {
-        toast.error('Conflict — flag was modified by someone else. Reload and retry.');
+        toast.error('Conflict â€” flag was modified by someone else. Reload and retry.');
       } else {
         toast.error(err instanceof ApiError ? err.message : 'Failed to update flag');
       }

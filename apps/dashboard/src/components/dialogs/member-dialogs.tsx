@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -7,8 +7,8 @@ import { Send } from 'lucide-react';
 import { z } from 'zod';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
-} from '~/components/primitives/dialog';
-import { Field, Input, Button, Radio } from '~/components/primitives/form';
+} from '@pulse-flags/ui';
+import { Field, Input, Button, Radio } from '@pulse-flags/ui';
 import { InviteMemberSchema, UpdateMemberRoleSchema } from '@pulse-flags/types';
 
 type Role = 'owner' | 'admin' | 'member' | 'viewer';
@@ -83,10 +83,10 @@ export function InviteMemberDialog({
           <span className="text-info">// </span>org roles can be overridden per-project from the member&apos;s profile.
         </div>
       </DialogBody>
-      <DialogFooter hint="audit logged · invitee notified by email">
+      <DialogFooter hint="audit logged Â· invitee notified by email">
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" icon={Send} disabled={loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'sending…' : 'send invite'}
+          {loading ? 'sendingâ€¦' : 'send invite'}
         </Button>
       </DialogFooter>
     </Dialog>
@@ -140,7 +140,7 @@ export function ChangeRoleDialog({
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" disabled={loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'saving…' : 'save'}
+          {loading ? 'savingâ€¦' : 'save'}
         </Button>
       </DialogFooter>
     </Dialog>

@@ -1,4 +1,4 @@
-export function Architecture() {
+﻿export function Architecture() {
   return (
     <div className="rounded-lg border border-border bg-surface-1 p-8 relative overflow-hidden">
       <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
@@ -34,12 +34,12 @@ export function Architecture() {
           </defs>
 
           <ArchNode x={40} y={130} w={130} h={60} label="dashboard" sub="PATCH /flags" color="#6bc5ff" />
-          <ArchNode x={260} y={60} w={140} h={60} label="api · fastify" sub="postgres write" color="#8be36b" />
-          <ArchNode x={260} y={200} w={140} h={60} label="api · fastify" sub="instance #2" color="#8be36b" />
+          <ArchNode x={260} y={60} w={140} h={60} label="api Â· fastify" sub="postgres write" color="#8be36b" />
+          <ArchNode x={260} y={200} w={140} h={60} label="api Â· fastify" sub="instance #2" color="#8be36b" />
           <ArchNode x={490} y={130} w={130} h={60} label="redis pub/sub" sub="pulse:env:*" color="#c77dff" />
-          <ArchNode x={680} y={40} w={100} h={50} label="sdk · web" sub="EventSource" color="#f0b95a" />
-          <ArchNode x={680} y={130} w={100} h={50} label="sdk · node" sub="EventSource" color="#f0b95a" />
-          <ArchNode x={680} y={220} w={100} h={50} label="sdk · mobile" sub="EventSource" color="#f0b95a" />
+          <ArchNode x={680} y={40} w={100} h={50} label="sdk Â· web" sub="EventSource" color="#f0b95a" />
+          <ArchNode x={680} y={130} w={100} h={50} label="sdk Â· node" sub="EventSource" color="#f0b95a" />
+          <ArchNode x={680} y={220} w={100} h={50} label="sdk Â· mobile" sub="EventSource" color="#f0b95a" />
 
           {/* Static connections */}
           <path d="M170 160 L260 90" stroke="#2a343c" strokeWidth="1.5" fill="none" markerEnd="url(#arrow)" />

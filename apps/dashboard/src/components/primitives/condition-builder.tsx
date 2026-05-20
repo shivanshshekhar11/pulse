@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { GripVertical, Plus, Trash2, Layers } from 'lucide-react';
-import { Button, Input, Select } from '~/components/primitives/form';
+import { Button, Input, Select } from '@pulse-flags/ui';
 import type { Condition, Operator } from '@pulse-flags/types';
 
 type OperatorOption = { value: Operator; label: string };

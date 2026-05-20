@@ -10,7 +10,7 @@ import { CreateUserSchema, type CreateUser } from '@pulse-flags/types';
 import {
   Mail, Lock, User as UserIcon, Eye, EyeOff, ArrowRight, Check,
 } from 'lucide-react';
-import { Field, Input, Checkbox } from '~/components/primitives/form';
+import { Field, Input, Checkbox } from '@pulse-flags/ui';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 

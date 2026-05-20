@@ -115,6 +115,11 @@ export interface PulseClientOptions<FlagMap = DefaultFlagMap> {
    * Defaults to `Infinity` (retry forever).
    */
   maxReconnectAttempts?: number;
+  /**
+   * Custom EventSource constructor. Use this to inject an EventSource polyfill
+   * in pure Node.js environments (e.g. `eventsource` npm package).
+   */
+  EventSource?: any;
 }
 
 /** Events emitted by PulseClient. */
@@ -146,6 +151,7 @@ export class PulseClient<FlagMap = DefaultFlagMap> extends TypedEmitter<PulseCli
   private readonly defaults: Partial<FlagMap>;
   private readonly cache: CacheAdapter;
   private readonly maxReconnectAttempts: number;
+  private readonly EventSourceClass: any;
 
   /** Derived lookup maps for O(1) flag and segment access. */
   private flagMap = new Map<string, Flag>();
@@ -164,6 +170,7 @@ export class PulseClient<FlagMap = DefaultFlagMap> extends TypedEmitter<PulseCli
     this.defaults = options.defaults ?? ({} as Partial<FlagMap>);
     this.cache = options.cache ?? createDefaultCacheAdapter();
     this.maxReconnectAttempts = options.maxReconnectAttempts ?? Infinity;
+    this.EventSourceClass = options.EventSource ?? (typeof EventSource !== 'undefined' ? EventSource : undefined);
   }
 
   // ── Public API ──────────────────────────────────────────────────────────────
@@ -360,14 +367,18 @@ export class PulseClient<FlagMap = DefaultFlagMap> extends TypedEmitter<PulseCli
     const streamUrl = `${this.apiUrl}/sdk/v1/stream?apiKey=${encodeURIComponent(this.apiKey)}`;
 
     try {
-      this.eventSource = new EventSource(streamUrl);
+      if (!this.EventSourceClass) {
+        this.emit('error', { message: 'EventSource is not available. Please inject a polyfill via options.EventSource for Node.js usage.' });
+        return;
+      }
+      this.eventSource = new this.EventSourceClass(streamUrl);
     } catch (err) {
       this.emit('error', { message: 'Failed to open SSE connection', cause: err });
       this.scheduleReconnect();
       return;
     }
 
-    this.eventSource.addEventListener('open', () => {
+    this.eventSource?.addEventListener('open', () => {
       this.reconnectAttempt = 0;
       this.setState('CONNECTED');
     });
@@ -378,7 +389,7 @@ export class PulseClient<FlagMap = DefaultFlagMap> extends TypedEmitter<PulseCli
     // but our tsconfig targets ES2022 without DOM lib. The cast is safe here
     // because we control the server-side event shape.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.eventSource.addEventListener('init', (e: any) => {
+    this.eventSource?.addEventListener('init', (e: any) => {
       try {
         const data = JSON.parse(e.data) as { type: 'init'; ruleset: Ruleset };
         if (data.type === 'init' && data.ruleset) {
@@ -391,16 +402,18 @@ export class PulseClient<FlagMap = DefaultFlagMap> extends TypedEmitter<PulseCli
     });
 
     // `ruleset:updated` event — re-fetch the full ruleset
-    this.eventSource.addEventListener('ruleset:updated', () => {
+    this.eventSource?.addEventListener('ruleset:updated', () => {
       this.fetchRuleset().catch(() => undefined);
     });
 
-    this.eventSource.onerror = () => {
-      this.closeStream();
-      if (!this.closed) {
-        this.scheduleReconnect();
-      }
-    };
+    if (this.eventSource) {
+      this.eventSource.onerror = () => {
+        this.closeStream();
+        if (!this.closed) {
+          this.scheduleReconnect();
+        }
+      };
+    }
   }
 
   /** Closes the current EventSource without triggering a reconnect. */

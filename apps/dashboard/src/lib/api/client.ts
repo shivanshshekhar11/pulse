@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Base fetch client for the Pulse API.
  *
  * All requests go through this function which:

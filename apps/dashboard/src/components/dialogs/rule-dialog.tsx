@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -7,8 +7,8 @@ import { z } from 'zod';
 import { Plus, Save } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
-} from '~/components/primitives/dialog';
-import { Field, Input, Button } from '~/components/primitives/form';
+} from '@pulse-flags/ui';
+import { Field, Input, Button } from '@pulse-flags/ui';
 import { CreateRuleSchema } from '@pulse-flags/types';
 import type { Condition, Operator } from '@pulse-flags/types';
 import {
@@ -179,7 +179,7 @@ export function RuleDialog({
           <span className="text-primary">{String(watch('value') ?? '')}</span>
         </pre>
       </DialogBody>
-      <DialogFooter hint="audit logged · increments flag version">
+      <DialogFooter hint="audit logged Â· increments flag version">
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button
           variant="primary"
@@ -187,7 +187,7 @@ export function RuleDialog({
           disabled={!canSubmit || loading}
           onClick={handleSubmit(onValid)}
         >
-          {loading ? 'saving…' : mode === 'create' ? 'add rule' : 'save rule'}
+          {loading ? 'savingâ€¦' : mode === 'create' ? 'add rule' : 'save rule'}
         </Button>
       </DialogFooter>
     </Dialog>

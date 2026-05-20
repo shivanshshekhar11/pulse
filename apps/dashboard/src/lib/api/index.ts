@@ -1,4 +1,4 @@
-export { apiGet, apiPost, apiPatch, apiDelete, ApiError } from './client';
+﻿export { apiGet, apiPost, apiPatch, apiDelete, ApiError } from './client';
 export { flagsApi } from './flags';
 export { rulesApi } from './rules';
 export { segmentsApi } from './segments';

@@ -1,4 +1,4 @@
-import type { UserResponse, UserOrgResponse, UpdateUser, ChangePassword } from '@pulse-flags/types';
+﻿import type { UserResponse, UserOrgResponse, UpdateUser, ChangePassword } from '@pulse-flags/types';
 import { apiGet, apiPatch, apiPost } from './client';
 
 export const authApi = {

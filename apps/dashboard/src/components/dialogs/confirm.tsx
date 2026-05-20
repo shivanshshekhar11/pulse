@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogBody,
   DialogFooter,
-} from '~/components/primitives/dialog';
-import { Button, Input } from '~/components/primitives/form';
+} from '@pulse-flags/ui';
+import { Button, Input } from '@pulse-flags/ui';
 
 export function ConfirmDialog({
   open,
@@ -79,7 +79,7 @@ export function ConfirmDialog({
             <ul className="space-y-1.5 text-[12.5px] text-muted-foreground">
               {consequences.map((c) => (
                 <li key={c} className="flex items-start gap-2">
-                  <span className="text-destructive mt-1">·</span>
+                  <span className="text-destructive mt-1">Â·</span>
                   <span>{c}</span>
                 </li>
               ))}

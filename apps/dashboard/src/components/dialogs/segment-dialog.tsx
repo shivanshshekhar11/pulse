@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -9,8 +9,8 @@ import { z } from 'zod';
 import { Plus, Save } from 'lucide-react';
 import {
   Dialog, DialogHeader, DialogBody, DialogFooter,
-} from '~/components/primitives/dialog';
-import { Field, Input, Textarea, Button } from '~/components/primitives/form';
+} from '@pulse-flags/ui';
+import { Field, Input, Textarea, Button } from '@pulse-flags/ui';
 import type { Condition, Operator } from '@pulse-flags/types';
 import {
   ConditionBuilder,
@@ -144,7 +144,7 @@ export function SegmentDialog({
       <DialogFooter hint="segment conditions">
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" icon={mode === 'create' ? Plus : Save} disabled={!canSubmit || loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'saving…' : mode === 'create' ? 'create segment' : 'save changes'}
+          {loading ? 'savingâ€¦' : mode === 'create' ? 'create segment' : 'save changes'}
         </Button>
       </DialogFooter>
     </Dialog>

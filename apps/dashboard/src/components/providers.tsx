@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
@@ -7,14 +7,14 @@ import { Toaster } from 'sonner';
 import { getQueryClient } from '~/lib/query-client';
 
 /**
- * Providers — wraps the entire app with:
+ * Providers â€” wraps the entire app with:
  * - SessionProvider: Auth.js session context
  * - QueryClientProvider: TanStack Query data fetching
  * - ThemeProvider: next-themes dark/light mode
  * - Toaster: sonner toast notifications for mutation feedback
  *
  * Marked "use client" because all three providers require client context.
- * The children (page content) are still Server Components — Next.js streams
+ * The children (page content) are still Server Components â€” Next.js streams
  * them into this wrapper.
  */
 export function Providers({ children }: { children: React.ReactNode }) {

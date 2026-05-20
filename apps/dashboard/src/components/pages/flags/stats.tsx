@@ -1,4 +1,4 @@
-import { Zap, AlertTriangle } from 'lucide-react';
+﻿import { Zap, AlertTriangle } from 'lucide-react';
 import type { FlagResponse } from '@pulse-flags/types';
 
 const SPARK_COLORS: Record<string, string> = {

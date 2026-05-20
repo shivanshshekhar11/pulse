@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Filter, GitCommit, Flag, Layers, KeyRound, Users, Settings, Loader2, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { PageHeader } from '~/components/ui/page-header';
 import { useAuditLogs } from '~/lib/hooks/use-audit';
 import type { AuditLogResponse } from '@pulse-flags/types';
-import { Input } from '~/components/primitives/form';
+import { Input } from '@pulse-flags/ui';
 
 const RESOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   flag: Flag, rule: Flag, segment: Layers, member: Users, apikey: KeyRound,
@@ -119,14 +119,14 @@ export function AuditPage({ orgSlug }: { orgSlug: string }) {
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading audit log…</span>
+            <span className="font-mono text-[12px]">loading audit logâ€¦</span>
           </div>
         ) : (
           <>
             <div className="rounded-md border border-border bg-surface-1 max-w-[1200px] overflow-hidden">
               <div className="grid grid-cols-[160px_1fr_180px_140px_100px] gap-4 px-5 py-3 border-b border-border bg-surface-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
                 <div>actor</div>
-                <div>action · resource</div>
+                <div>action Â· resource</div>
                 <div>change</div>
                 <div>when</div>
                 <div>id</div>
@@ -141,7 +141,7 @@ export function AuditPage({ orgSlug }: { orgSlug: string }) {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between mt-4 max-w-[1200px] font-mono text-[11.5px] text-muted-foreground">
-                <span>page {currentPage} of {totalPages} · {total} total</span>
+                <span>page {currentPage} of {totalPages} Â· {total} total</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
@@ -196,19 +196,19 @@ function AuditRow({ event: e }: { event: AuditLogResponse }) {
       <div className="flex items-center gap-2 min-w-0">
         <Icon className="size-3.5 text-dim shrink-0" />
         <span className={ACTION_COLOR[e.action] ?? 'text-foreground'}>{e.action}</span>
-        <span className="text-dim">·</span>
-        <span className="truncate text-foreground">{e.resourceId?.slice(0, 8) ?? '—'}</span>
+        <span className="text-dim">Â·</span>
+        <span className="truncate text-foreground">{e.resourceId?.slice(0, 8) ?? 'â€”'}</span>
       </div>
 
       <div className="flex items-center gap-1.5">
         {diffFrom && diffTo ? (
           <>
             <span className="px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-[10.5px]">{diffFrom}</span>
-            <span className="text-dim">→</span>
+            <span className="text-dim">â†’</span>
             <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[10.5px]">{diffTo}</span>
           </>
         ) : (
-          <span className="text-dim">—</span>
+          <span className="text-dim">â€”</span>
         )}
       </div>
 

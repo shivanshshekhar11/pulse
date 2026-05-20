@@ -1,4 +1,4 @@
-import type { RuleResponse, CreateRule, UpdateRule, ReorderRules } from '@pulse-flags/types';
+﻿import type { RuleResponse, CreateRule, UpdateRule, ReorderRules } from '@pulse-flags/types';
 import { apiGet, apiPost, apiPatch, apiDelete } from './client';
 
 const base = (o: string, p: string, e: string, fk: string) =>

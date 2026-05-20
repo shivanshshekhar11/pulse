@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation';
+﻿import { redirect } from 'next/navigation';
 import { auth } from '~/lib/auth';
 import { Landing } from '~/components/landing/landing';
 
@@ -18,7 +18,7 @@ export default async function RootPage() {
     if (orgSlug) {
       redirect(`/${orgSlug}/projects`);
     }
-    // Has a session but no org yet — show landing so they can create one
+    // Has a session but no org yet â€” show landing so they can create one
   }
 
   return <Landing />;

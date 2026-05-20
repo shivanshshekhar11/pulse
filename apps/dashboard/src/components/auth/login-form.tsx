@@ -10,7 +10,7 @@ import { LoginSchema, type Login } from '@pulse-flags/types';
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight, Check,
 } from 'lucide-react';
-import { Field, Input } from '~/components/primitives/form';
+import { Field, Input } from '@pulse-flags/ui';
 
 export function LoginForm() {
   const router = useRouter();

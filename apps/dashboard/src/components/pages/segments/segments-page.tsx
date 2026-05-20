@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { Plus, Users, Code2, Pencil, Copy, Trash2, ChevronRight, Loader2 } from 'lucide-react';
@@ -64,7 +64,7 @@ export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
       </PageHeader>
 
       <div className="px-10 py-4 border-b border-border font-mono text-[12px] text-muted-foreground">
-        Reusable user groups · org-scoped · referenced by{' '}
+        Reusable user groups Â· org-scoped Â· referenced by{' '}
         <span className="text-foreground">flag rules</span> via{' '}
         <span className="text-info">segment</span> operator
       </div>
@@ -73,11 +73,11 @@ export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading segments…</span>
+            <span className="font-mono text-[12px]">loading segmentsâ€¦</span>
           </div>
         ) : !segments || segments.length === 0 ? (
           <div className="text-center py-20 font-mono text-[12px] text-dim">
-            // no segments yet ·{' '}
+            // no segments yet Â·{' '}
             <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button>
           </div>
         ) : (

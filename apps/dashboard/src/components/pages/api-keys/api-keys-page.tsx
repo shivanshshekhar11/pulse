@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Plus, KeyRound, Trash2, Loader2 } from 'lucide-react';
@@ -56,12 +56,12 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading keys…</span>
+            <span className="font-mono text-[12px]">loading keysâ€¦</span>
           </div>
         ) : (
           <div className="rounded-md border border-border bg-surface-1 max-w-[1200px] overflow-hidden">
             <div className="grid grid-cols-[1fr_140px_120px_140px_140px_60px] gap-4 px-5 py-3 border-b border-border bg-surface-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
-              <div>name · prefix</div>
+              <div>name Â· prefix</div>
               <div>environment</div>
               <div>scopes</div>
               <div>last used</div>
@@ -70,7 +70,7 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
             </div>
             {(keys ?? []).length === 0 ? (
               <div className="px-5 py-10 text-center font-mono text-[12px] text-dim">
-                // no API keys yet ·{' '}
+                // no API keys yet Â·{' '}
                 <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">generate one</button>
               </div>
             ) : (
@@ -81,7 +81,7 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
                     <div className="font-mono text-[12px] text-muted-foreground mt-1 flex items-center gap-2">
                       <KeyRound className="size-3 text-dim" />
                       <span>{k.keyPrefix}</span>
-                      <span className="text-dim">{'•'.repeat(28)}</span>
+                      <span className="text-dim">{'â€¢'.repeat(28)}</span>
                     </div>
                   </div>
                   <div className="font-mono text-[12px] flex items-center gap-1.5">
@@ -108,7 +108,7 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
           </div>
         )}
         <p className="font-mono text-[11.5px] text-dim mt-4 max-w-[1200px]">
-          // keys are environment-scoped · prod keys cannot read non-prod data · format: ps_(live|test)_&lt;40 hex chars&gt;
+          // keys are environment-scoped Â· prod keys cannot read non-prod data Â· format: ps_(live|test)_&lt;40 hex chars&gt;
         </p>
       </div>
 
@@ -144,7 +144,7 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
         confirmLabel="revoke key"
         variant="danger"
         onConfirm={() => revokeTarget && revokeKey.mutate(revokeTarget.id)}
-        consequences={['Immediate loss of access for all consumers', 'Cannot be undone — generate a new key to replace it']}
+        consequences={['Immediate loss of access for all consumers', 'Cannot be undone â€” generate a new key to replace it']}
       />
     </main>
   );
