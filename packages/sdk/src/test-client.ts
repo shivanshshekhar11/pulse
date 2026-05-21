@@ -84,6 +84,31 @@ export class PulseTestClient {
   }
 
   /**
+   * Creates a rule for a flag.
+   */
+  async createRule(flagKey: string, rule: any): Promise<void> {
+    const res = await this.request('POST', `${this.basePath}/${flagKey}/rules`, rule);
+    if (!res.ok) {
+      throw new Error(`Failed to create rule for flag "${flagKey}" (HTTP ${res.status})`);
+    }
+  }
+
+  /**
+   * Deletes all rules for a flag.
+   */
+  async clearRules(flagKey: string): Promise<void> {
+    const res = await this.request('GET', `${this.basePath}/${flagKey}/rules`);
+    if (!res.ok) return;
+    const rulesRes = (await res.json()) as any;
+    
+    await Promise.all(
+      rulesRes.data.map((r: any) =>
+        this.request('DELETE', `${this.basePath}/${flagKey}/rules/${r.id}`)
+      )
+    );
+  }
+
+  /**
    * Sets the `defaultValue` of a flag.
    * Useful for testing string/number/json flag variants.
    */
@@ -114,8 +139,8 @@ export class PulseTestClient {
     if (!res.ok) {
       throw new Error(`Failed to list flags (HTTP ${res.status})`);
     }
-    const body = (await res.json()) as { data: FlagResponse[] };
-    return body.data;
+    const body = (await res.json()) as { data: { items: FlagResponse[] } };
+    return body.data.items;
   }
 
   /** Fetches a single flag by key. */

@@ -95,14 +95,18 @@ export default async function sdkRoutes(fastify: FastifyInstance) {
     }
 
     // Set SSE headers — must be done before any write
-    reply.raw.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      // Critical for nginx: prevents response buffering which would delay events
-      'X-Accel-Buffering': 'no',
-      'X-Request-ID': requestId,
-    });
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
+    reply.raw.setHeader('Connection', 'keep-alive');
+    // Manual CORS headers since onSend hook is never reached for this infinite route
+    reply.raw.setHeader('Access-Control-Allow-Origin', request.headers.origin || '*');
+    reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
+    // Critical for nginx: prevents response buffering which would delay events
+    reply.raw.setHeader('X-Accel-Buffering', 'no');
+    if (requestId) {
+      reply.raw.setHeader('X-Request-ID', requestId);
+    }
+    reply.raw.flushHeaders();
 
     // Tell the client to wait 5 seconds before reconnecting if the connection
     // drops. The SDK implements its own exponential backoff on top of this.

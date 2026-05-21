@@ -13,6 +13,7 @@ import {
   auditLogs,
 } from './schema';
 import { hashPassword, generateApiKey, sha256 } from '../lib/crypto';
+import { sql } from 'drizzle-orm';
 
 /**
  * Comprehensive seed file for testing and exploration
@@ -29,8 +30,20 @@ import { hashPassword, generateApiKey, sha256 } from '../lib/crypto';
  * - Sample audit log entries
  */
 
+async function clearDatabase() {
+  console.log('🧹 Clearing existing data (idempotency setup)...');
+  await db.execute(sql`
+    TRUNCATE TABLE 
+      users, organizations, org_members, projects, project_members, 
+      environments, api_keys, flags, rules, segments, audit_logs 
+    RESTART IDENTITY CASCADE;
+  `);
+  console.log('  ✓ Database cleared\n');
+}
+
 async function seed() {
   console.log('🌱 Starting database seed...\n');
+  await clearDatabase();
 
   // ============================================================================
   // USERS
@@ -196,7 +209,12 @@ async function seed() {
 
   for (const env of createdEnvironments) {
     const isProd = env.name === 'production';
-    const rawKey = generateApiKey(isProd);
+    // For local development and e2e tests, force a known key ONLY for the primary test environment
+    let rawKey = generateApiKey(isProd);
+    if (env.id === acmeWebDev.id) {
+      rawKey = 'ps_test_your_api_key_here';
+    }
+
     const keyHash = sha256(rawKey);
     const keyPrefix = rawKey.slice(0, 12);
 
@@ -297,6 +315,62 @@ async function seed() {
   console.log('🚩 Creating feature flags...');
 
   const flagsData = [
+    // Acme Web - Development (Next.js Example App flags)
+    {
+      environmentId: acmeWebDev.id,
+      key: 'new_homepage_hero',
+      name: 'New Homepage Hero',
+      description: 'Redesigned hero section for NovaPay',
+      type: 'boolean',
+      defaultValue: false,
+      enabled: false,
+      tags: ['ui', 'homepage'],
+      createdBy: alice.id,
+    },
+    {
+      environmentId: acmeWebDev.id,
+      key: 'pricing_cta_text',
+      name: 'Pricing CTA Text',
+      description: 'A/B test for pricing page copy',
+      type: 'string',
+      defaultValue: 'Start Free',
+      enabled: false,
+      tags: ['marketing', 'ab-test'],
+      createdBy: alice.id,
+    },
+    {
+      environmentId: acmeWebDev.id,
+      key: 'new_analytics_widget',
+      name: 'New Analytics Widget',
+      description: 'New predictive analytics widget rollout',
+      type: 'boolean',
+      defaultValue: false,
+      enabled: false,
+      tags: ['analytics'],
+      createdBy: alice.id,
+    },
+    {
+      environmentId: acmeWebDev.id,
+      key: 'beta_export_feature',
+      name: 'Beta Export Feature',
+      description: 'Export feature gated for beta users',
+      type: 'boolean',
+      defaultValue: false,
+      enabled: false,
+      tags: ['beta'],
+      createdBy: alice.id,
+    },
+    {
+      environmentId: acmeWebDev.id,
+      key: 'theme_config',
+      name: 'Theme Config',
+      description: 'Global theme configuration',
+      type: 'json',
+      defaultValue: { primaryColor: '#6366f1', radius: 8 },
+      enabled: true,
+      tags: ['ui', 'theme'],
+      createdBy: alice.id,
+    },
     // Acme Web - Production
     {
       environmentId: acmeWebProd.id,
