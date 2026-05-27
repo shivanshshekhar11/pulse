@@ -326,9 +326,16 @@ export function TagInput({
 }
 
 // ── RHF helpers ──────────────────────────────────────────────────────────────
-import { Controller } from 'react-hook-form';
+import { Controller, type Control, type FieldValues, type Path } from 'react-hook-form';
 
-export function RHFInput({ control, name, ...props }: any) {
+export function RHFInput<TFieldValues extends FieldValues>({
+  control,
+  name,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  control: Control<TFieldValues>;
+  name: Path<TFieldValues>;
+}) {
   return (
     <Controller
       control={control}
@@ -340,7 +347,17 @@ export function RHFInput({ control, name, ...props }: any) {
   );
 }
 
-export function RHFCheckbox({ control, name, label, hint }: any) {
+export function RHFCheckbox<TFieldValues extends FieldValues>({
+  control,
+  name,
+  label,
+  hint,
+}: {
+  control: Control<TFieldValues>;
+  name: Path<TFieldValues>;
+  label: React.ReactNode;
+  hint?: string;
+}) {
   return (
     <Controller
       control={control}

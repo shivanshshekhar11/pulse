@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -34,13 +34,46 @@ export function FlagsPage({
   const qc = useQueryClient();
   const createFlag = useCreateFlag(orgSlug, projectSlug, envName);
 
-  // Poll for updates
+  // Poll for updates as fallback, but use SSE for real-time
   useEffect(() => {
     if (!session) return undefined;
-    const interval = setInterval(() => {
-      void qc.invalidateQueries({ queryKey: ['flags', orgSlug, projectSlug, envName] });
-    }, 30_000);
-    return () => clearInterval(interval);
+    const token = (session as { accessToken?: string }).accessToken;
+    if (!token) return undefined;
+
+    const streamUrl = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/api/v1/orgs/${orgSlug}/projects/${projectSlug}/envs/${envName}/flags/stream?token=${token}`;
+    
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let attempt = 0;
+
+    const connect = () => {
+      es = new EventSource(streamUrl);
+
+      es.onopen = () => {
+        attempt = 0;
+      };
+
+      es.addEventListener('flag:updated', () => {
+        void qc.invalidateQueries({ queryKey: ['flags', orgSlug, projectSlug, envName] });
+      });
+
+      es.onerror = () => {
+        if (es) {
+          es.close();
+          es = null;
+        }
+        const delay = Math.min(1000 * 2 ** attempt, 30000);
+        attempt++;
+        reconnectTimer = setTimeout(connect, delay);
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (es) es.close();
+      clearTimeout(reconnectTimer);
+    };
   }, [session, orgSlug, projectSlug, envName, qc]);
 
   const flags = flagData?.items ?? [];

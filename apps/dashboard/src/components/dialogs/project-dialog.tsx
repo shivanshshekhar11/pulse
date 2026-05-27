@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -77,14 +77,14 @@ export function ProjectDialog({
     n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
   const envs = watch('environments') ?? [];
-  const normalizedNames = envs.map((env: any) => env.name.trim().toLowerCase());
+  const normalizedNames = envs.map((env: ProjectEnvironmentValues) => env.name.trim().toLowerCase());
   const duplicateNames = normalizedNames.filter((name: string, index: number) => name && normalizedNames.indexOf(name) !== index);
   const envError = mode === 'create'
     ? envs.length === 0
       ? 'at least one environment is required'
       : duplicateNames.length > 0
         ? 'environment names must be unique'
-        : envs.some((env: any) => !env.name.trim())
+        : envs.some((env: ProjectEnvironmentValues) => !env.name.trim())
           ? 'environment names are required'
           : undefined
     : undefined;

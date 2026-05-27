@@ -66,6 +66,11 @@ export class PulseTestClient {
     this.basePath = `/api/v1/orgs/${options.orgSlug}/projects/${options.projectSlug}/envs/${options.envName}/flags`;
   }
 
+  /** Gets the underlying access token. */
+  get getToken(): string {
+    return this.accessToken;
+  }
+
   // ── Flag state helpers ──────────────────────────────────────────────────────
 
   /**
@@ -86,7 +91,7 @@ export class PulseTestClient {
   /**
    * Creates a rule for a flag.
    */
-  async createRule(flagKey: string, rule: any): Promise<void> {
+  async createRule(flagKey: string, rule: Record<string, unknown>): Promise<void> {
     const res = await this.request('POST', `${this.basePath}/${flagKey}/rules`, rule);
     if (!res.ok) {
       throw new Error(`Failed to create rule for flag "${flagKey}" (HTTP ${res.status})`);
@@ -99,10 +104,10 @@ export class PulseTestClient {
   async clearRules(flagKey: string): Promise<void> {
     const res = await this.request('GET', `${this.basePath}/${flagKey}/rules`);
     if (!res.ok) return;
-    const rulesRes = (await res.json()) as any;
+    const rulesRes = (await res.json()) as { data: { id: string }[] };
     
     await Promise.all(
-      rulesRes.data.map((r: any) =>
+      rulesRes.data.map((r: { id: string }) =>
         this.request('DELETE', `${this.basePath}/${flagKey}/rules/${r.id}`)
       )
     );

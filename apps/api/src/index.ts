@@ -47,6 +47,13 @@ fastify.decorate(
     reply: import('fastify').FastifyReply
   ) {
     try {
+      // Extract token from query string (fallback if fastify drops it)
+      const tokenMatch = request.url.match(/[?&]token=([^&]+)/);
+      const token = (request.query as { token?: string })?.token || (tokenMatch ? tokenMatch[1] : undefined);
+      
+      if (token) {
+        request.headers.authorization = `Bearer ${token}`;
+      }
       await request.jwtVerify();
     } catch {
       reply.code(401).send({

@@ -126,4 +126,80 @@ test.describe('NovaPay Feature Flags', () => {
     // Ensure the inline style border-radius was applied from the fallback tier
     await expect(hero).toHaveCSS('border-radius', '24px');
   });
+
+  test('shows export feature for beta segment users', async ({ page, request }) => {
+    // 1. Create a segment via API directly using request context
+    const segmentRes = await request.post(`${apiUrl}/api/v1/orgs/acme-corp/segments`, {
+      headers: { 
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${pulse.getToken}` 
+      },
+      data: {
+        name: 'Beta Users Test Segment',
+        description: 'Users opted into beta',
+        conditions: {
+          operator: 'AND',
+          conditions: [
+            { op: 'eq', attribute: 'beta', value: 'true' }
+          ]
+        }
+      }
+    });
+    const segmentData = await segmentRes.json();
+    const segmentId = segmentData.data.id;
+
+    // 2. Set up flag with segment rule
+    await pulse.setDefault('beta_export_feature', false);
+    await pulse.clearRules('beta_export_feature').catch(() => {});
+    await pulse.createRule('beta_export_feature', {
+      name: 'Beta Segment Rule',
+      conditions: {
+        operator: 'AND',
+        conditions: [
+          { attribute: 'userId', op: 'segment', value: segmentId }
+        ]
+      },
+      percentage: 100,
+      value: true,
+      enabled: true
+    });
+    await pulse.enable('beta_export_feature');
+
+    await page.goto('/dashboard');
+    const betaCheckbox = page.getByTestId('beta-checkbox');
+    const exportBtn = page.getByTestId('export-feature');
+    
+    // Default user (checkbox unchecked)
+    await expect(exportBtn).toHaveCount(0);
+
+    // Beta user
+    await betaCheckbox.check();
+    await expect(exportBtn).toBeVisible();
+
+    // Clean up segment
+    await request.delete(`${apiUrl}/api/v1/orgs/acme-corp/segments/${segmentId}`, {
+      headers: { Authorization: `Bearer ${pulse.getToken}` }
+    });
+  });
+
+  test('live toggle reflects without page reload via SSE', async ({ page }) => {
+    await pulse.setDefault('new_homepage_hero', false);
+    await pulse.disable('new_homepage_hero');
+    
+    await page.goto('/');
+
+    const oldHero = page.getByTestId('old-hero');
+    await expect(oldHero).toBeVisible();
+
+    // Wait for EventSource to connect fully before we trigger an update
+    await page.waitForTimeout(2000);
+
+    // Toggle the flag on while the page is open
+    await pulse.setDefault('new_homepage_hero', true);
+    await pulse.enable('new_homepage_hero');
+
+    // Wait for the new hero to appear automatically via SSE
+    const newHero = page.getByTestId('new-hero');
+    await expect(newHero).toBeVisible({ timeout: 10000 });
+  });
 });

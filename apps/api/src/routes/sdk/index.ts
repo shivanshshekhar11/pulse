@@ -54,6 +54,7 @@ export default async function sdkRoutes(fastify: FastifyInstance) {
 
     // X-Cache: MISS — Redis caching layer is a future optimisation
     reply.header('X-Cache', 'MISS');
+    reply.header('Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate');
 
     return reply.send({ data: ruleset });
   });

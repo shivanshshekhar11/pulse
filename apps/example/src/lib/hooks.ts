@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { pulseClient } from './pulse';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function usePulseFlag(key: any, context: { userId: string; [k: string]: any } = { userId: 'anonymous' }) {
+export function usePulseFlag(key: string, context: { userId: string; [k: string]: unknown } = { userId: 'anonymous' }) {
   const [value, setValue] = useState(() => pulseClient.isEnabled(key, context));
   const [variant, setVariant] = useState(() => pulseClient.getVariant(key, context));
 
@@ -38,8 +37,7 @@ export function usePulseState() {
   const [state, setState] = useState(() => pulseClient.getState());
 
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleState = (e: { state: any }) => {
+    const handleState = (e: { state: 'DISCONNECTED' | 'CONNECTING' | 'CONNECTED' | 'RECONNECTING' | 'STALE' }) => {
       setState(e.state);
     };
     pulseClient.on('state:changed', handleState);

@@ -119,7 +119,7 @@ export interface PulseClientOptions<FlagMap = DefaultFlagMap> {
    * Custom EventSource constructor. Use this to inject an EventSource polyfill
    * in pure Node.js environments (e.g. `eventsource` npm package).
    */
-  EventSource?: any;
+  EventSource?: typeof EventSource;
 }
 
 /** Events emitted by PulseClient. */
@@ -151,7 +151,7 @@ export class PulseClient<FlagMap = DefaultFlagMap> extends TypedEmitter<PulseCli
   private readonly defaults: Partial<FlagMap>;
   private readonly cache: CacheAdapter;
   private readonly maxReconnectAttempts: number;
-  private readonly EventSourceClass: any;
+  private readonly EventSourceClass: typeof EventSource | undefined;
 
   /** Derived lookup maps for O(1) flag and segment access. */
   private flagMap = new Map<string, Flag>();
@@ -388,10 +388,10 @@ export class PulseClient<FlagMap = DefaultFlagMap> extends TypedEmitter<PulseCli
     // custom event name expects EventListenerOrEventListenerObject (a DOM type),
     // but our tsconfig targets ES2022 without DOM lib. The cast is safe here
     // because we control the server-side event shape.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.eventSource?.addEventListener('init', (e: any) => {
+    this.eventSource?.addEventListener('init', (e: Event | { data: string }) => {
       try {
-        const data = JSON.parse(e.data) as { type: 'init'; ruleset: Ruleset };
+        const eventData = 'data' in e ? (e as { data: string }).data : '';
+        const data = JSON.parse(eventData) as { type: 'init'; ruleset: Ruleset };
         if (data.type === 'init' && data.ruleset) {
           this.applyRuleset(data.ruleset);
           this.cache.set(cacheKey(this.apiKey), data.ruleset);

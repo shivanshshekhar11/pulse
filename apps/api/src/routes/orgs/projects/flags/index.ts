@@ -11,9 +11,21 @@ import { assertPermission } from '../../../../lib/rbac';
 import { writeAuditLog } from '../../../../lib/audit';
 import { resolveEnvironment } from '../../../../lib/resolvers';
 import * as flagService from '../../../../services/flags';
+import { redis } from '../../../../lib/redis';
+import type { Redis as RedisClient } from 'ioredis';
 
 export default async function flagRoutes(fastify: FastifyInstance) {
   const f = fastify.withTypeProvider<ZodTypeProvider>();
+
+  const openSubscribers = new Set<RedisClient>();
+
+  fastify.addHook('onClose', async () => {
+    for (const sub of openSubscribers) {
+      await sub.unsubscribe().catch(() => undefined);
+      await sub.quit().catch(() => undefined);
+    }
+    openSubscribers.clear();
+  });
 
   // GET /api/v1/orgs/:orgSlug/projects/:projectSlug/envs/:envName/flags
   f.get('/:orgSlug/projects/:projectSlug/envs/:envName/flags', {
@@ -194,5 +206,56 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     await flagService.publishFlagChange(ctx.environment.id, flag.id, 'deleted');
 
     return reply.code(204).send();
+  });
+
+  // GET /api/v1/orgs/:orgSlug/projects/:projectSlug/envs/:envName/flags/stream
+  f.get('/:orgSlug/projects/:projectSlug/envs/:envName/flags/stream', {
+    onRequest: [fastify.authenticate],
+    schema: {
+      params: ListFlagsRouteSchema.params,
+    },
+  }, async (request, reply) => {
+    const requestId = request.id;
+    const { orgSlug, projectSlug, envName } = request.params;
+
+    const ctx = await resolveEnvironment(reply, requestId, orgSlug, projectSlug, envName);
+    if (!ctx) return;
+
+    if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id))) return;
+
+    // Set SSE headers
+    reply.raw.setHeader('Content-Type', 'text/event-stream');
+    reply.raw.setHeader('Cache-Control', 'no-cache, no-transform');
+    reply.raw.setHeader('Connection', 'keep-alive');
+    reply.raw.setHeader('Access-Control-Allow-Origin', request.headers.origin || '*');
+    reply.raw.setHeader('Access-Control-Allow-Credentials', 'true');
+    reply.raw.setHeader('X-Accel-Buffering', 'no');
+    if (requestId) {
+      reply.raw.setHeader('X-Request-ID', requestId);
+    }
+    reply.raw.flushHeaders();
+
+    reply.raw.write('retry: 5000\n\n');
+
+    const sub = redis.duplicate();
+    openSubscribers.add(sub);
+    await sub.subscribe(`pulse:env:${ctx.environment.id}`);
+
+    sub.on('message', (_channel: string, message: string) => {
+      reply.raw.write(`event: flag:updated\ndata: ${message}\n\n`);
+    });
+
+    const heartbeat = setInterval(() => {
+      reply.raw.write(': heartbeat\n\n');
+    }, 30_000);
+
+    request.raw.on('close', () => {
+      clearInterval(heartbeat);
+      openSubscribers.delete(sub);
+      sub.unsubscribe().catch(() => undefined);
+      sub.quit().catch(() => undefined);
+    });
+
+    return new Promise<void>(() => undefined);
   });
 }

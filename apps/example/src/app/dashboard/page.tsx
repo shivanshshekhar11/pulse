@@ -1,10 +1,12 @@
-﻿'use client';
+'use client';
 import { useState } from 'react';
 import { usePulseFlag } from '@/lib/hooks';
 
 export default function Dashboard() {
   const [userId, setUserId] = useState('user-1');
+  const [isBeta, setIsBeta] = useState(false);
   const { value: hasNewWidget } = usePulseFlag('new_analytics_widget', { userId });
+  const { value: hasExport } = usePulseFlag('beta_export_feature', { userId, beta: isBeta ? 'true' : 'false' });
 
   return (
     <div className="max-w-4xl mx-auto mt-10">
@@ -18,6 +20,14 @@ export default function Dashboard() {
           onChange={e => setUserId(e.target.value)}
           className="border p-2 rounded"
           data-testid="user-id-input"
+        />
+        <label className="font-semibold ml-4">Beta Opt-in:</label>
+        <input
+          type="checkbox"
+          checked={isBeta}
+          onChange={e => setIsBeta(e.target.checked)}
+          data-testid="beta-checkbox"
+          className="size-4"
         />
       </div>
 
@@ -33,6 +43,14 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {hasExport && (
+        <div className="mt-6 flex justify-end">
+          <button data-testid="export-feature" className="bg-green-600 text-white px-4 py-2 rounded font-semibold">
+            Export Data (Beta)
+          </button>
+        </div>
+      )}
     </div>
   );
 }

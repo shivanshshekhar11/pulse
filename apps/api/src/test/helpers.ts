@@ -60,6 +60,12 @@ export async function buildApp(): Promise<FastifyInstance> {
       reply: Parameters<typeof app.authenticate>[1]
     ) {
       try {
+        const tokenMatch = request.url.match(/[?&]token=([^&]+)/);
+        const token = (request.query as { token?: string })?.token || (tokenMatch ? tokenMatch[1] : undefined);
+        
+        if (token) {
+          request.headers.authorization = `Bearer ${token}`;
+        }
         await request.jwtVerify();
       } catch {
         reply.code(401).send({
