@@ -13,25 +13,13 @@ import { useUserContext } from './user-context';
 export function usePulseFlag(key: string) {
   const { flagContext } = useUserContext();
 
-  // Stable hash of the context so we can adjust state during render when context changes
-  const contextHash = JSON.stringify(flagContext);
-
-  const [value, setValue] = useState(() => pulseClient.isEnabled(key, flagContext));
-  const [variant, setVariant] = useState(() => pulseClient.getVariant(key, flagContext));
-  const [prevHash, setPrevHash] = useState(contextHash);
-
-  // Sync state if context changes (standard React state-from-props pattern)
-  if (contextHash !== prevHash) {
-    setPrevHash(contextHash);
-    setValue(pulseClient.isEnabled(key, flagContext));
-    setVariant(pulseClient.getVariant(key, flagContext));
-  }
+  const [, setTick] = useState(0);
+  const forceUpdate = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     const handleUpdate = (e: { flagKey: string }) => {
       if (e.flagKey === key) {
-        setValue(pulseClient.isEnabled(key, flagContext));
-        setVariant(pulseClient.getVariant(key, flagContext));
+        forceUpdate();
       }
     };
 
@@ -39,7 +27,10 @@ export function usePulseFlag(key: string) {
     return () => {
       pulseClient.off('flag:updated', handleUpdate);
     };
-  }, [key, contextHash, flagContext]);
+  }, [key, forceUpdate]);
+
+  const value = pulseClient.isEnabled(key, flagContext);
+  const variant = pulseClient.getVariant(key, flagContext);
 
   return { value, variant };
 }
@@ -81,36 +72,24 @@ export type KnownFlag = (typeof KNOWN_FLAGS)[number];
 export function useAllFlags() {
   const { flagContext } = useUserContext();
 
-  const contextHash = JSON.stringify(flagContext);
-
-  const evaluate = useCallback(() => {
-    return KNOWN_FLAGS.map((key) => ({
-      key,
-      value: pulseClient.isEnabled(key, flagContext),
-      variant: pulseClient.getVariant(key, flagContext),
-    }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [contextHash]);
-
-  const [flags, setFlags] = useState(evaluate);
-  const [prevHash, setPrevHash] = useState(contextHash);
-
-  // Sync state if context changes
-  if (contextHash !== prevHash) {
-    setPrevHash(contextHash);
-    setFlags(evaluate());
-  }
+  const [, setTick] = useState(0);
+  const forceUpdate = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
     const handleUpdate = () => {
-      setFlags(evaluate());
+      forceUpdate();
     };
 
     pulseClient.on('flag:updated', handleUpdate);
     return () => {
       pulseClient.off('flag:updated', handleUpdate);
     };
-  }, [contextHash, evaluate]);
+  }, [forceUpdate]);
 
-  return flags;
+  return KNOWN_FLAGS.map((key) => ({
+    key,
+    value: pulseClient.isEnabled(key, flagContext),
+    variant: pulseClient.getVariant(key, flagContext),
+  }));
 }
+

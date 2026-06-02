@@ -47,14 +47,13 @@ RUN addgroup --system --gid 1001 expressjs
 RUN adduser --system --uid 1001 expressjs
 USER expressjs
 
-COPY --from=installer /app/apps/api/package.json .
-COPY --from=installer /app/apps/api/dist ./dist
-COPY --from=installer /app/apps/api/drizzle ./drizzle
-COPY --from=installer /app/node_modules ./node_modules
-COPY --from=installer /app/apps/api/node_modules ./apps/api/node_modules
+# Copy the entire pruned and built workspace from the installer stage.
+# This is required for pnpm workspaces because dependencies are symlinked.
+COPY --from=installer --chown=expressjs:expressjs /app .
 
 EXPOSE 4000
 ENV API_PORT=4000
 ENV NODE_ENV=production
 
-CMD ["node", "dist/index.js"]
+# Run the compiled file from its actual monorepo location
+CMD ["node", "apps/api/dist/index.js"]

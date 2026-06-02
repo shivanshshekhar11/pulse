@@ -33,7 +33,8 @@ test.describe('NovaPay Feature Flags', () => {
     });
   });
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ page }) => {
+    page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
     await pulse.resetAll(); // ensure clean state
   });
 
