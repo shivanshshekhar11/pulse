@@ -4,7 +4,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 WORKDIR /app
-RUN pnpm add -g turbo
+RUN npm install -g turbo
 COPY . .
 RUN turbo prune @pulse-flags/dashboard --docker
 

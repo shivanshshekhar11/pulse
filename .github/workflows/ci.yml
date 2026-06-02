@@ -49,6 +49,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://pulse:pulse@localhost:5432/pulse
 
+      - name: Seed Database
+        run: pnpm --filter @pulse-flags/api db:seed
+        env:
+          DATABASE_URL: postgresql://pulse:pulse@localhost:5432/pulse
+
       - name: Lint
         run: pnpm run lint
 

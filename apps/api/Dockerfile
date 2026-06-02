@@ -10,7 +10,7 @@ RUN corepack enable
 WORKDIR /app
 
 # Install turbo
-RUN pnpm add -g turbo
+RUN npm install -g turbo
 
 # Copy all workspace files
 COPY . .
