@@ -40,7 +40,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 USER nextjs
 
-COPY --from=installer /app/apps/dashboard/public ./apps/dashboard/public
+# public/ is optional — dashboard does not currently have one
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/dashboard/.next/static ./apps/dashboard/.next/static
 

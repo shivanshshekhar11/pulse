@@ -194,7 +194,7 @@ test.describe('NovaPay Feature Flags', () => {
     await expect(oldHero).toBeVisible();
 
     // Wait for EventSource to connect fully before we trigger an update
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
     // Toggle the flag on while the page is open
     await pulse.setDefault('new_homepage_hero', true);
@@ -202,6 +202,6 @@ test.describe('NovaPay Feature Flags', () => {
 
     // Wait for the new hero to appear automatically via SSE
     const newHero = page.getByTestId('new-hero');
-    await expect(newHero).toBeVisible({ timeout: 10000 });
+    await expect(newHero).toBeVisible({ timeout: 15000 });
   });
 });

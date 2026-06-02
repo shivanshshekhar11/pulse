@@ -1,7 +1,10 @@
 name: Build and Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
     branches:
       - main
   workflow_dispatch:
@@ -13,6 +16,7 @@ env:
 jobs:
   # ── Build all four images in parallel ─────────────────────────────────────
   build-api:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Build API
     runs-on: ubuntu-latest
     permissions:
@@ -37,6 +41,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=api
 
   build-dashboard:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Build Dashboard
     runs-on: ubuntu-latest
     permissions:
@@ -66,6 +71,7 @@ jobs:
             NEXT_PUBLIC_EXAMPLE_URL=${{ vars.NEXT_PUBLIC_EXAMPLE_URL }}
 
   build-docs:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Build Docs
     runs-on: ubuntu-latest
     permissions:
@@ -95,6 +101,7 @@ jobs:
             NEXT_PUBLIC_EXAMPLE_URL=${{ vars.NEXT_PUBLIC_EXAMPLE_URL }}
 
   build-example:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     name: Build Example
     runs-on: ubuntu-latest
     permissions:

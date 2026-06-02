@@ -44,6 +44,14 @@ jobs:
           done
           echo "Postgres is ready."
 
+      - name: Wait for Redis to be healthy
+        run: |
+          echo "Waiting for Redis..."
+          until docker compose exec -T redis redis-cli ping | grep -q PONG; do
+            sleep 1
+          done
+          echo "Redis is ready."
+
       - name: Run DB migrations
         run: pnpm --filter @pulse-flags/api db:migrate
         env:
@@ -68,6 +76,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://pulse:pulse@localhost:5432/pulse
           REDIS_URL: redis://localhost:6379
+          # Seeded API key for the NovaPay web development environment.
+          # Forwarded by playwright.config.ts to the example app webServer process.
+          NEXT_PUBLIC_PULSE_API_KEY: ps_test_your_api_key_here
+          NEXT_PUBLIC_PULSE_URL: http://127.0.0.1:4000
 
       - name: Upload Playwright Report
         if: always()

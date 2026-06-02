@@ -1,10 +1,46 @@
-node_modules
-.next
-.turbo
-dist
-.env*
-!.env.example
-*.log
-.DS_Store
+# ── node_modules — exclude at every depth ─────────────────────────────────────
+# A plain `node_modules` only excludes the root-level directory.
+# The `**/node_modules` glob covers all workspace-level node_modules too
+# (apps/api/node_modules, packages/sdk/node_modules, etc.).
+**/node_modules
+
+# ── Build outputs ─────────────────────────────────────────────────────────────
+**/.next
+**/dist
+**/.turbo
+
+# ── Drizzle generated migrations (not needed in image — migrations run at deploy)
+# Exclude if you prefer to bake them in; they are small so this is optional.
+# **/drizzle
+
+# ── Test / Playwright artefacts ───────────────────────────────────────────────
 apps/example/playwright-report
 apps/example/test-results
+apps/example/e2e
+
+# ── Environment files (secrets must be injected at runtime, never baked in) ───
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.test
+# Keep .env.example files so Dockerfile COPYs don't fail
+!**/.env.example
+
+# ── OS / editor noise ─────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+**/*.log
+**/.git
+
+# ── Docker files themselves (no need to copy into image) ──────────────────────
+**/Dockerfile
+**/.dockerignore
+docker-compose*.yml
+
+# ── GitHub Actions ────────────────────────────────────────────────────────────
+.github
+
+# ── Documentation ─────────────────────────────────────────────────────────────
+*.md
+apps/docs/content
