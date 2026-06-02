@@ -26,6 +26,49 @@ const LoginSchema = z.object({
   password: z.string().min(1),
 });
 
+interface JWTToken {
+  sub?: string;
+  accessToken: string;
+  refreshToken: string;
+  orgSlug: string;
+  accessTokenExpires: number;
+  error?: string;
+  [key: string]: unknown;
+}
+
+async function refreshAccessToken(token: JWTToken): Promise<JWTToken> {
+  try {
+    const res = await fetch(`${API_URL}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: token.refreshToken }),
+    });
+
+    if (!res.ok) {
+      throw new Error('Failed to refresh access token');
+    }
+
+    const body = (await res.json()) as {
+      data: {
+        accessToken: string;
+        refreshToken: string;
+      };
+    };
+
+    return {
+      ...token,
+      accessToken: body.data.accessToken,
+      refreshToken: body.data.refreshToken,
+      accessTokenExpires: Date.now() + 14 * 60 * 1000, // 14 minutes (15m expiry - 1m buffer)
+    };
+  } catch (error) {
+    return {
+      ...token,
+      error: 'RefreshAccessTokenError',
+    };
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
@@ -92,14 +135,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token['accessToken'] = (user as { accessToken: string }).accessToken;
         token['refreshToken'] = (user as { refreshToken: string }).refreshToken;
         token['orgSlug'] = (user as { orgSlug?: string }).orgSlug ?? '';
+        token['accessTokenExpires'] = Date.now() + 14 * 60 * 1000;
+        return token;
       }
-      return token;
+
+      // Return previous token if the access token has not expired yet
+      if (Date.now() < (token['accessTokenExpires'] as number)) {
+        return token;
+      }
+
+      // Access token has expired, try to update it
+      return refreshAccessToken(token as unknown as JWTToken) as unknown as typeof token;
     },
-    // Expose accessToken and orgSlug to the client session
+    // Expose accessToken, orgSlug, and error to the client session
     async session({ session, token }) {
       session.user.id = token.sub ?? '';
       (session as { accessToken?: string }).accessToken = token['accessToken'] as string;
       (session as { orgSlug?: string }).orgSlug = token['orgSlug'] as string;
+      (session as { error?: string }).error = token['error'] as string;
       return session;
     },
   },
@@ -120,6 +173,7 @@ declare module 'next-auth' {
   interface Session {
     accessToken?: string;
     orgSlug?: string;
+    error?: string;
     user: {
       id: string;
       email: string;

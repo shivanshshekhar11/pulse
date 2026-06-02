@@ -483,6 +483,18 @@ describe('Project & Environment Routes', () => {
       expect(res.statusCode).toBe(403);
     });
 
+    it('viewer cannot create environments (403)', async () => {
+      const project = await createTestProject(orgId);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/orgs/${orgSlug}/projects/${project.slug}/environments`,
+        headers: { authorization: `Bearer ${viewerUser.token}` },
+        payload: { name: 'dev' },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
     it('returns 400 once environment limit is reached', async () => {
       const project = await createTestProject(orgId);
       await createTestEnvironment(project.id, { name: 'one' });

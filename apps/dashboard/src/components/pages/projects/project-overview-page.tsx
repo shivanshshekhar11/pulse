@@ -14,6 +14,7 @@ import { EnvironmentDialog, ProjectDialog } from '~/components/dialogs/project-d
 import { useState } from 'react';
 import { ConfirmDialog } from '~/components/dialogs/confirm';
 import { useRouter } from 'next/navigation';
+import { usePermission } from '~/lib/hooks/use-permissions';
 
 const ENV_COLORS: Record<string, string> = {
   production: '#ff5d5d',
@@ -38,6 +39,9 @@ export function ProjectOverviewPage({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
+  const { hasPerm: canWriteProject } = usePermission(orgSlug, 'projects:write');
+  const { hasPerm: canWriteEnv } = usePermission(orgSlug, 'environments:write');
+
   const envLimitReached = (environments?.length ?? 0) >= 5;
 
   return (
@@ -48,28 +52,34 @@ export function ProjectOverviewPage({
         command={`pulse flags list --project=${projectSlug}`}
       >
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setEditOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground"
-          >
-            <Pencil className="size-3.5" strokeWidth={2.5} /> edit project
-          </button>
-          <button
-            type="button"
-            onClick={() => setDeleteOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] border border-destructive/30 text-destructive hover:bg-destructive/10"
-          >
-            <Trash2 className="size-3.5" strokeWidth={2.5} /> delete project
-          </button>
-          <button
-            type="button"
-            onClick={() => setEnvDialogOpen(true)}
-            disabled={envLimitReached}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="size-3.5" strokeWidth={2.5} /> new environment
-          </button>
+          {canWriteProject && (
+            <>
+              <button
+                type="button"
+                onClick={() => setEditOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground"
+              >
+                <Pencil className="size-3.5" strokeWidth={2.5} /> edit project
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeleteOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] border border-destructive/30 text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="size-3.5" strokeWidth={2.5} /> delete project
+              </button>
+            </>
+          )}
+          {canWriteEnv && (
+            <button
+              type="button"
+              onClick={() => setEnvDialogOpen(true)}
+              disabled={envLimitReached}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Plus className="size-3.5" strokeWidth={2.5} /> new environment
+            </button>
+          )}
         </div>
       </PageHeader>
 
@@ -93,14 +103,16 @@ export function ProjectOverviewPage({
                 <p className="font-mono text-[12px] text-dim mb-4">
                   // no environments yet
                 </p>
-                <button
-                  type="button"
-                  onClick={() => setEnvDialogOpen(true)}
-                  disabled={envLimitReached}
-                  className="font-mono text-[12px] text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  create your first environment →
-                </button>
+                {canWriteEnv && (
+                  <button
+                    type="button"
+                    onClick={() => setEnvDialogOpen(true)}
+                    disabled={envLimitReached}
+                    className="font-mono text-[12px] text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    create your first environment →
+                  </button>
+                )}
               </div>
             ) : (
               <div className="space-y-3">
