@@ -10,7 +10,7 @@ Pulse is designed to be easily self-hostable in any environment. The most robust
 Our recommended self-hosted stack runs via Docker containers:
 
 - **Fastify API**: `api.pulseflags.live`
-- **Dashboard**: `app.pulseflags.live`
+- **Dashboard**: `pulseflags.live`
 - **Docs**: `docs.pulseflags.live`
 - **PostgreSQL**: Standard relational database for application state
 - **Redis**: In-memory store for Pub/Sub and SSE fan-out
@@ -56,7 +56,7 @@ For example, using Nginx:
 2. Run Certbot to automatically fetch and configure Let's Encrypt SSL certificates:
 
 ```bash
-certbot --nginx -d api.pulseflags.live -d app.pulseflags.live -d docs.pulseflags.live
+certbot --nginx -d api.pulseflags.live -d pulseflags.live -d docs.pulseflags.live
 ```
 
 Your self-hosted Pulse instance is now live and accessible!

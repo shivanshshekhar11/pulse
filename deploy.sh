@@ -43,6 +43,6 @@ $COMPOSE ps
 echo ""
 echo "✅ Deploy complete."
 echo "   API:       https://api.pulseflags.live"
-echo "   Dashboard: https://app.pulseflags.live"
+echo "   Dashboard: https://pulseflags.live"
 echo "   Docs:      https://docs.pulseflags.live"
 echo "   Example:   https://demo.pulseflags.live"
