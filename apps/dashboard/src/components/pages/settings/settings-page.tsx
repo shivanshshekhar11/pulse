@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -18,6 +18,7 @@ import { useOrg, useUpdateOrg, useDeleteOrg } from '~/lib/hooks/use-org';
 import { useProfile, useUpdateProfile, useChangePassword } from '~/lib/hooks/use-auth';
 import { useUserOrgs } from '~/lib/hooks/use-user-orgs';
 import { ConfirmDialog } from '~/components/dialogs/confirm';
+import { usePermission } from '~/lib/hooks/use-permissions';
 import { CreateOrganizationSchema, UpdateUserSchema, ChangePasswordSchema } from '@pulse-flags/types';
 
 type Tab = 'profile' | 'security' | 'org-general' | 'org-danger';
@@ -40,14 +41,22 @@ export function SettingsPage({ orgSlug }: { orgSlug: string }) {
   const changePassword = useChangePassword();
   const { refetch: refetchUserOrgs } = useUserOrgs();
 
+  const { hasPerm: canUpdateOrg, isLoading: permLoading } = usePermission(orgSlug, 'org:update');
+
   const [deleteOpen, setDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    if (!permLoading && !canUpdateOrg && (tab === 'org-general' || tab === 'org-danger')) {
+      setTab('profile');
+    }
+  }, [canUpdateOrg, permLoading, tab]);
 
   const handleDeleteOrg = async () => {
     try {
       await deleteOrg.mutateAsync();
       const next = await refetchUserOrgs();
       const nextOrg = next.data?.find((o) => o.slug !== orgSlug);
-      router.push(nextOrg ? `/${nextOrg.slug}/projects` : '/login');
+      router.push(nextOrg ? `/${nextOrg.slug}/projects` : '/_/projects');
     } catch {
       // Errors are surfaced by the mutation toast.
     }
@@ -66,12 +75,16 @@ export function SettingsPage({ orgSlug }: { orgSlug: string }) {
               <SettingsNavItem key={t.id} tab={t} active={tab === t.id} onClick={() => setTab(t.id)} />
             ))}
           </ul>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim px-2 mb-1.5">// organization</div>
-          <ul className="space-y-0.5">
-            {TABS.filter((t) => t.group === 'org').map((t) => (
-              <SettingsNavItem key={t.id} tab={t} active={tab === t.id} onClick={() => setTab(t.id)} />
-            ))}
-          </ul>
+          {canUpdateOrg && (
+            <>
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-dim px-2 mb-1.5">// organization</div>
+              <ul className="space-y-0.5">
+                {TABS.filter((t) => t.group === 'org').map((t) => (
+                  <SettingsNavItem key={t.id} tab={t} active={tab === t.id} onClick={() => setTab(t.id)} />
+                ))}
+              </ul>
+            </>
+          )}
         </aside>
 
         {/* Content */}
@@ -127,7 +140,7 @@ export function SettingsPage({ orgSlug }: { orgSlug: string }) {
   );
 }
 
-// â”€â”€ Nav item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ────────────────────────────────────────────────────────────────────────
 
 function SettingsNavItem({ tab, active, onClick }: { tab: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }; active: boolean; onClick: () => void }) {
   const Icon = tab.icon;
@@ -141,7 +154,7 @@ function SettingsNavItem({ tab, active, onClick }: { tab: { id: Tab; label: stri
   );
 }
 
-// â”€â”€ Section components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ────────────────────────────────────────────────────────────────────────
 
 function ProfileSection({
   profile,
@@ -214,7 +227,7 @@ function ProfileSection({
             }))}
             disabled={!canSave || saving}
           >
-            {saving ? 'savingâ€¦' : 'save changes'}
+            {saving ? 'saving…' : 'save changes'}
           </PrimaryBtn>
         </ActionRow>
       </Card>
@@ -273,7 +286,7 @@ function SecuritySection({
             })}
             disabled={!canSave || saving}
           >
-            {saving ? 'updatingâ€¦' : 'update password'}
+            {saving ? 'updating…' : 'update password'}
           </PrimaryBtn>
         </ActionRow>
       </Card>
@@ -294,7 +307,7 @@ function OrgGeneralSection({ orgSlug, orgName, orgPlan, onSave, saving }: { orgS
   }, [orgName, reset]);
   return (
     <>
-      <SectionHead title="organization Â· general" subtitle="Public-facing organization details." />
+      <SectionHead title="organization · general" subtitle="Public-facing organization details." />
       <Card label="profile">
         <FieldRow label="organization name" hint="Display name shown across the dashboard.">
           <TextInput {...register('name')} />
@@ -305,7 +318,7 @@ function OrgGeneralSection({ orgSlug, orgName, orgPlan, onSave, saving }: { orgS
         <FieldRow label="plan" hint="Read-only in v1."><TextInput value={planLabel} disabled /></FieldRow>
         <ActionRow>
           <PrimaryBtn icon={Save} onClick={handleSubmit((values) => onSave?.(values.name.trim()))} disabled={!name?.trim() || saving}>
-            {saving ? 'savingâ€¦' : 'save changes'}
+            {saving ? 'saving…' : 'save changes'}
           </PrimaryBtn>
         </ActionRow>
       </Card>
@@ -331,7 +344,7 @@ function OrgDangerSection({ onDelete }: { onDelete?: () => void }) {
   );
 }
 
-// â”€â”€ Shared helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ────────────────────────────────────────────────────────────────────────
 
 function SectionHead({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
   return (

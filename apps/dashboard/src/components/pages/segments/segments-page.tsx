@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { Plus, Users, Code2, Pencil, Copy, Trash2, ChevronRight, Loader2 } from 'lucide-react';
@@ -6,6 +6,7 @@ import { PageHeader } from '~/components/ui/page-header';
 import { SegmentDialog } from '~/components/dialogs/segment-dialog';
 import { ConfirmDialog } from '~/components/dialogs/confirm';
 import { useSegments, useDeleteSegment, useCreateSegment, useUpdateSegment } from '~/lib/hooks/use-segments';
+import { usePermission } from '~/lib/hooks/use-permissions';
 import type { SegmentResponse } from '@pulse-flags/types';
 
 type Cond = { attr: string; op: string; val: string };
@@ -41,6 +42,7 @@ export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
   const deleteSegment = useDeleteSegment(orgSlug);
   const createSegment = useCreateSegment(orgSlug);
   const updateSegment = useUpdateSegment(orgSlug);
+  const { hasPerm: canWrite } = usePermission(orgSlug, 'segments:write');
 
   const segments = segmentData?.items ?? [];
   const total = segmentData?.total ?? 0;
@@ -57,28 +59,35 @@ export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <PageHeader crumb={`${orgSlug} / segments`} title="segments" command="pulse segments list --org=acme-corp">
-        <button type="button" onClick={() => setCreateOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="size-3.5" strokeWidth={2.5} /> new segment
-        </button>
+      <PageHeader crumb={`${orgSlug} / segments`} title="segments" command={`pulse segments list --org=${orgSlug}`}>
+        {canWrite && (
+          <button type="button" onClick={() => setCreateOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="size-3.5" strokeWidth={2.5} /> new segment
+          </button>
+        )}
       </PageHeader>
-
+ 
       <div className="px-10 py-4 border-b border-border font-mono text-[12px] text-muted-foreground">
-        Reusable user groups Â· org-scoped Â· referenced by{' '}
+        Reusable user groups · org-scoped · referenced by{' '}
         <span className="text-foreground">flag rules</span> via{' '}
         <span className="text-info">segment</span> operator
       </div>
-
+ 
       <div className="flex-1 overflow-y-auto px-10 py-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading segmentsâ€¦</span>
+            <span className="font-mono text-[12px]">loading segments…</span>
           </div>
         ) : !segments || segments.length === 0 ? (
           <div className="text-center py-20 font-mono text-[12px] text-dim">
-            // no segments yet Â·{' '}
-            <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button>
+            // no segments yet
+            {canWrite && (
+              <>
+                {' · '}
+                <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 max-w-[1200px]">
@@ -96,9 +105,9 @@ export function SegmentsPage({ orgSlug }: { orgSlug: string }) {
                       {s.description && <p className="text-[13px] text-muted-foreground">{s.description}</p>}
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <IconBtn icon={Pencil} onClick={() => setEditTarget(s)} />
+                      {canWrite && <IconBtn icon={Pencil} onClick={() => setEditTarget(s)} />}
                       <IconBtn icon={Copy} onClick={() => navigator.clipboard?.writeText(s.id)} />
-                      <IconBtn icon={Trash2} danger onClick={() => setDeleteTarget(s)} />
+                      {canWrite && <IconBtn icon={Trash2} danger onClick={() => setDeleteTarget(s)} />}
                     </div>
                   </header>
 

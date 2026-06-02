@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -6,10 +6,10 @@ const LINES = [
   { delay: 200, text: '// Evaluating flag for user: user_123', color: 'text-dim' },
   { delay: 800, text: 'const isEnabled = pulse.isEnabled("new_dashboard_v2");', color: 'text-foreground' },
   { delay: 1500, text: '// Evaluated in 0.12ms locally', color: 'text-primary' },
-  { delay: 2300, text: 'Ã¢â€” new_dashboard_v2     bool   40% rollout   2 rules', color: 'text-primary' },
-  { delay: 2600, text: 'Ã¢â€” pricing_cta_text     str    100%          0 rules', color: 'text-info' },
-  { delay: 2900, text: 'Ã¢â€” checkout_timeout_ms  num    100%          1 rule ', color: 'text-warning' },
-  { delay: 3200, text: 'Ã¢â€” theme_config        json   100%          1 rule ', color: 'text-magenta' },
+  { delay: 2300, text: '● new_dashboard_v2     bool   40% rollout   2 rules', color: 'text-primary' },
+  { delay: 2600, text: '● pricing_cta_text     str    100%          0 rules', color: 'text-info' },
+  { delay: 2900, text: '● checkout_timeout_ms  num    100%          1 rule ', color: 'text-warning' },
+  { delay: 3200, text: '● theme_config        json   100%          1 rule ', color: 'text-magenta' },
   { delay: 3700, text: '{ "status": "success", "evaluations": 1247 }', color: 'text-muted-foreground' },
 ] as const;
 

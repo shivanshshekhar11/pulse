@@ -1,0 +1,10 @@
+node_modules
+.next
+.turbo
+dist
+.env*
+!.env.example
+*.log
+.DS_Store
+apps/example/playwright-report
+apps/example/test-results

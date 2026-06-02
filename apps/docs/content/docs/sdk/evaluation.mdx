@@ -1,0 +1,52 @@
+---
+title: Evaluation
+description: Evaluate flags locally with zero latency.
+---
+
+Once the SDK is initialized and connected, you can evaluate flags locally. Pulse fetches the ruleset once and performs all targeting checks in-memory, ensuring flag evaluation never slows down your application.
+
+## `pulse.evaluate()`
+
+The primary method for evaluating a flag is `evaluate()`.
+
+```typescript
+const isEnabled = pulse.evaluate('checkout-v2', { userId: '123' }, false);
+```
+
+### Parameters
+
+1. **`flagKey`** (`string`): The unique key of the flag you want to evaluate.
+2. **`context`** (`Record<string, unknown>`): Optional. The attributes used for targeting rules (e.g., `userId`, `email`, `role`).
+3. **`defaultValue`** (`T`): The fallback value returned if the flag does not exist, network fails, or targeting rules don't match.
+
+## Targeting Context
+
+Context properties map directly to the **Conditions** you set up in the Pulse Dashboard. 
+
+For example, if you create a Rule in the Dashboard that says `email ENDS_WITH "@acme.com"`, you must pass the `email` property in the context object during evaluation:
+
+```typescript
+const hasProFeatures = pulse.evaluate('pro-features', {
+  email: 'user@acme.com', 
+  plan: 'enterprise'
+}, false);
+```
+
+## Supported Value Types
+
+While boolean toggles are the most common, Pulse supports multiple variant types (String, Number, JSON). The type of your `defaultValue` determines the return type via TypeScript generics:
+
+```typescript
+// Returns boolean
+const showBanner = pulse.evaluate('show-banner', {}, false);
+
+// Returns string
+const buttonColor = pulse.evaluate('button-color', {}, 'blue');
+
+// Returns number
+const maxRetries = pulse.evaluate('max-retries', {}, 3);
+```
+
+## Non-blocking Checks
+
+`evaluate()` is completely synchronous. It does not perform a network call. This means you can use it inside fast paths, render loops, or high-throughput API routes without any performance penalty.

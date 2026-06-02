@@ -200,7 +200,7 @@ export function ProjectDialog({
           disabled={!canSubmit || loading}
           onClick={handleSubmit(onValid)}
         >
-          {loading ? 'savingâ€¦' : mode === 'create' ? 'create project' : 'save changes'}
+          {loading ? 'saving…' : mode === 'create' ? 'create project' : 'save changes'}
         </Button>
       </DialogFooter>
     </Dialog>
@@ -279,7 +279,7 @@ export function EnvironmentDialog({
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" icon={Plus} disabled={!watch('name') || loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'creatingâ€¦' : 'create'}
+          {loading ? 'creating…' : 'create'}
         </Button>
       </DialogFooter>
     </Dialog>

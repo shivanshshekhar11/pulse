@@ -1,0 +1,35 @@
+---
+title: Real-time Updates
+description: How Pulse syncs flag changes instantly using SSE.
+---
+
+One of Pulse's core features is **instant propagation**. When you toggle a flag in the Pulse Dashboard, the change reflects in your application within milliseconds, without requiring a browser refresh or a server restart.
+
+## How it works
+
+When you call `pulse.connect()`, the SDK establishes a persistent **Server-Sent Events (SSE)** connection to the Pulse API. 
+
+1. **Dashboard Mutation**: A product manager flips a flag in the UI.
+2. **Redis Pub/Sub**: The Pulse API saves the change to PostgreSQL and publishes a message to a Redis channel specific to your Environment.
+3. **SSE Broadcast**: All active API instances listen to Redis and broadcast the updated ruleset to any connected SDK clients via SSE.
+4. **Local Evaluation**: The SDK updates its in-memory store.
+
+## Listening for Updates
+
+You can attach an event listener to the SDK to react when flags change. This is especially useful in React/Next.js to trigger a re-render.
+
+```typescript
+pulse.on('update', () => {
+  console.log('Ruleset updated!');
+  // e.g., router.refresh() or setReactState(Date.now())
+});
+```
+
+## Reconnection Strategy
+
+If the SSE connection drops (due to network changes, API deployments, etc.), the SDK will automatically attempt to reconnect.
+
+Pulse uses an **exponential backoff** strategy for reconnections:
+`Math.min(1000 * 2 ** attempt, 30_000)`
+
+This means it will retry after 1s, 2s, 4s, 8s, up to a maximum of 30 seconds between attempts, ensuring your application remains resilient.

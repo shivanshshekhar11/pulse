@@ -5,7 +5,7 @@ import '~/styles/globals.css';
 export const metadata: Metadata = {
   title: {
     template: '%s | Pulse',
-    default: 'Pulse â€” Feature Flags',
+    default: 'Pulse — Feature Flags',
   },
   description: 'Self-hostable, multi-tenant feature flag service.',
 };

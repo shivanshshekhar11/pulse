@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   // Transpile workspace packages so Next.js/Turbopack can process their
   // TypeScript/JSX source directly without a separate build step.
   transpilePackages: ['@pulse-flags/ui', '@pulse-flags/types'],

@@ -1,0 +1,35 @@
+---
+title: Fallback Strategy
+description: Pulse's three-tier resilience model.
+---
+
+Feature flags shouldn't break your app if the network goes down. The Pulse SDK is designed never to throw errors during flag evaluation, and instead uses a **three-tier fallback order** to guarantee a safe return value.
+
+## The Three Tiers
+
+When you call `pulse.evaluate()`, the SDK determines the value in this exact order:
+
+1. **In-Memory Store (Tier 1)**
+   If the SDK successfully fetched the ruleset from the API (or received an SSE update), it evaluates the flag against the rules in memory.
+
+2. **Persistent Cache (Tier 2)**
+   If the network fails on initial load, the SDK checks its local cache. 
+   - In the **browser**, this uses `localStorage`.
+   - In **Node.js**, this uses an in-memory cache mechanism.
+   *(Note: The SDK caches the ruleset automatically upon every successful sync).*
+
+3. **Developer Defaults (Tier 3)**
+   If there is no cached ruleset and the network is down, the SDK returns the `defaultValue` you explicitly provided in the `evaluate` call.
+
+## Graceful Degradation
+
+Because `PulseClient` never throws on evaluation, you do not need to wrap your flag checks in `try/catch` blocks.
+
+If an error occurs internally (e.g., a malformed rule), the SDK will:
+1. Emit a `warn` log to the console.
+2. Return the fallback `defaultValue`.
+
+```typescript
+// Even if everything fails, this safely returns false
+const enabled = pulse.evaluate('new-feature', {}, false);
+```

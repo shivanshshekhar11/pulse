@@ -1,8 +1,9 @@
 'use client';
 
 import { PulseClient } from '@pulse-flags/sdk';
+import { env } from '@/env';
 
-if (!process.env.NEXT_PUBLIC_PULSE_API_KEY) {
+if (!env.NEXT_PUBLIC_PULSE_API_KEY) {
   console.warn(
     'NEXT_PUBLIC_PULSE_API_KEY is not set. The Pulse SDK will operate in offline mode, using only developer defaults.',
   );
@@ -10,8 +11,8 @@ if (!process.env.NEXT_PUBLIC_PULSE_API_KEY) {
 
 export const pulseClient = new PulseClient({
   // Never hardcode API keys in public code, even test ones.
-  apiKey: process.env.NEXT_PUBLIC_PULSE_API_KEY || '',
-  apiUrl: process.env.NEXT_PUBLIC_PULSE_URL || 'http://127.0.0.1:3001',
+  apiKey: env.NEXT_PUBLIC_PULSE_API_KEY,
+  apiUrl: env.NEXT_PUBLIC_PULSE_URL,
   defaults: {
     new_homepage_hero:     false,
     pricing_cta_text:      'Start Free',

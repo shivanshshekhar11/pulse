@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { Flag, GitBranch, Plus, Pencil, Trash2, Loader2, ArrowRight } from 'lucide-react';
@@ -86,7 +86,7 @@ export function ProjectOverviewPage({
             {isLoading ? (
               <div className="flex items-center gap-2 text-muted-foreground py-8">
                 <Loader2 className="size-4 animate-spin" />
-                <span className="font-mono text-[12px]">loading environmentsâ€¦</span>
+                <span className="font-mono text-[12px]">loading environments…</span>
               </div>
             ) : !environments || environments.length === 0 ? (
               <div className="rounded-md border border-border bg-surface-1 p-8 text-center">
@@ -99,7 +99,7 @@ export function ProjectOverviewPage({
                   disabled={envLimitReached}
                   className="font-mono text-[12px] text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  create your first environment â†’
+                  create your first environment →
                 </button>
               </div>
             ) : (

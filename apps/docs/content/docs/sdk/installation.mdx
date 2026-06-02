@@ -1,0 +1,30 @@
+---
+title: Installation
+description: Install the Pulse SDK in your JavaScript or TypeScript project.
+---
+
+The Pulse SDK is designed for zero-latency, local feature flag evaluation. It runs everywhere JavaScript runs: Node.js, Next.js, Cloudflare Workers, and standard browsers.
+
+## Package Manager
+
+Install the `@pulse-flags/sdk` package via your preferred package manager.
+
+```bash
+# npm
+npm install @pulse-flags/sdk
+
+# pnpm
+pnpm add @pulse-flags/sdk
+
+# yarn
+yarn add @pulse-flags/sdk
+```
+
+## Requirements
+
+- Node.js 18.0 or later (if running on the server)
+- `fetch` and `EventSource` available globally (Node 18+ provides these natively; browsers have supported them for years).
+
+## Next Steps
+
+Once installed, head to the [Configuration](/docs/sdk/configuration) guide to learn how to initialize the client.

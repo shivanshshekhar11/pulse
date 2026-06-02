@@ -39,7 +39,7 @@ export function Field({
 // ── Input ─────────────────────────────────────────────────────────────────────
 
 const inputBase =
-  'w-full px-3 py-2 bg-surface-0 border border-border rounded-md text-[13px] placeholder:text-dim focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors disabled:opacity-60';
+  'w-full py-2 bg-surface-0 border border-border rounded-md text-[13px] placeholder:text-dim focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-colors disabled:opacity-60';
 
 export function Input({
   mono,
@@ -58,19 +58,20 @@ export function Input({
           </span>
           <input
             {...props}
-            className={`${inputBase} rounded-l-none ${mono ? 'font-mono' : ''} ${props.className ?? ''}`}
+            className={`${inputBase} px-3 rounded-l-none ${mono ? 'font-mono' : ''} ${props.className ?? ''}`}
           />
         </div>
       );
     }
     return (
       <div className="relative">
-        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
           {prefixProp}
         </span>
         <input
           {...props}
-          className={`${inputBase} pl-8 ${mono ? 'font-mono' : ''} ${props.className ?? ''}`}
+          style={{ paddingLeft: '2.25rem' }}
+          className={`${inputBase} pr-3 ${mono ? 'font-mono' : ''} ${props.className ?? ''}`}
         />
       </div>
     );
@@ -78,7 +79,7 @@ export function Input({
   return (
     <input
       {...props}
-      className={`${inputBase} ${mono ? 'font-mono' : ''} ${props.className ?? ''}`}
+      className={`${inputBase} px-3 ${mono ? 'font-mono' : ''} ${props.className ?? ''}`}
     />
   );
 }

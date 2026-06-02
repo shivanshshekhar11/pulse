@@ -1,0 +1,27 @@
+---
+title: Welcome to Pulse
+description: The enterprise-grade feature flag service for modern teams.
+---
+
+Welcome to the **Pulse** documentation. Pulse is a fast, flexible, and fully open-source feature flag management platform. It consists of a Management API, a Next.js Dashboard, and a powerful TypeScript SDK.
+
+## Core Concepts
+
+Pulse relies on a few fundamental concepts:
+
+- **Projects**: Top-level containers for your feature flags.
+- **Environments**: Logical environments within a project (e.g., `production`, `staging`).
+- **Flags**: The feature flags themselves, which can be boolean or multivariate.
+- **Rules**: Targeting rules based on context (e.g., segmenting by email, user ID, or region).
+- **Segments**: Reusable targeting groups that can be applied across multiple flags.
+
+## Why Pulse?
+
+- **Real-time updates**: Feature flags update instantly in your application via Server-Sent Events (SSE) and Redis Pub/Sub.
+- **Local evaluation**: The SDK fetches your ruleset once and evaluates flags locally, resulting in zero latency for flag checks.
+- **Type-safe**: Built with TypeScript end-to-end, featuring Zod schema validation at all API boundaries.
+- **Self-hostable**: Easily deployable via Docker Compose to any virtual private server (VPS) or container orchestrator.
+
+## Getting Started
+
+Ready to jump in? Head over to the [Quickstart](/docs/quickstart) guide to get your first flag working in under 5 minutes.

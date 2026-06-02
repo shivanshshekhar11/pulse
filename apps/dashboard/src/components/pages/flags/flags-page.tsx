@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { Plus, RefreshCw, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useQueryClient } from '@tanstack/react-query';
+import { env } from '~/env';
 import { PageHeader } from '~/components/ui/page-header';
 import { Stats } from './stats';
 import { FlagRow } from './flag-row';
 import { FlagDialog } from '~/components/dialogs/flag-dialog';
 import { useFlags, useCreateFlag } from '~/lib/hooks/use-flags';
+import { usePermission } from '~/lib/hooks/use-permissions';
 
 export function FlagsPage({
   orgSlug,
@@ -33,6 +35,7 @@ export function FlagsPage({
   const { data: session } = useSession();
   const qc = useQueryClient();
   const createFlag = useCreateFlag(orgSlug, projectSlug, envName);
+  const { hasPerm: canWrite } = usePermission(orgSlug, 'flags:write');
 
   // Poll for updates as fallback, but use SSE for real-time
   useEffect(() => {
@@ -40,7 +43,7 @@ export function FlagsPage({
     const token = (session as { accessToken?: string }).accessToken;
     if (!token) return undefined;
 
-    const streamUrl = `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'}/api/v1/orgs/${orgSlug}/projects/${projectSlug}/envs/${envName}/flags/stream?token=${token}`;
+    const streamUrl = `${env.NEXT_PUBLIC_API_URL}/api/v1/orgs/${orgSlug}/projects/${projectSlug}/envs/${envName}/flags/stream?token=${token}`;
     
     let es: EventSource | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout>;
@@ -91,7 +94,7 @@ export function FlagsPage({
 
   const lastSync = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString('en-US', { hour12: false })
-    : 'â€”';
+    : '—';
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -105,13 +108,15 @@ export function FlagsPage({
           <div>last sync <span className="text-foreground">{lastSync}</span></div>
           <div className="text-dim mt-1">{new Date().toISOString().slice(0, 19).replace('T', ' ')} UTC</div>
         </div>
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="size-3.5" strokeWidth={2.5} /> new flag
-        </button>
+        {canWrite && (
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="size-3.5" strokeWidth={2.5} /> new flag
+          </button>
+        )}
       </PageHeader>
 
       {/* Tag filters + toolbar */}
@@ -129,7 +134,7 @@ export function FlagsPage({
       {/* Table header */}
       <div className="grid grid-cols-[28px_1fr_140px_180px_200px_64px] gap-6 px-6 py-3 border-b border-border bg-surface-0/50 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
         <div />
-        <div>flag Â· key</div>
+        <div>flag · key</div>
         <div>type</div>
         <div>status</div>
         <div>updated</div>
@@ -141,12 +146,14 @@ export function FlagsPage({
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading flagsâ€¦</span>
+            <span className="font-mono text-[12px]">loading flags…</span>
           </div>
         ) : flags.length === 0 ? (
           <div className="px-6 py-16 text-center font-mono text-[12px] text-dim">
             <span className="text-primary">$</span> no flags found
-            <> Â· <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button></>
+            {canWrite && (
+              <> · <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button></>
+            )}
           </div>
         ) : (
           <>

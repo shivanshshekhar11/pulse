@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Plus, KeyRound, Trash2, Loader2 } from 'lucide-react';
@@ -7,6 +7,8 @@ import { ConfirmDialog } from '~/components/dialogs/confirm';
 import { ApiKeyDialog } from '~/components/dialogs/api-key-dialog';
 import { useApiKeys, useCreateApiKey, useRevokeApiKey } from '~/lib/hooks/use-api-keys';
 import { useAllEnvironments } from '~/lib/hooks/use-all-environments';
+import { usePermission } from '~/lib/hooks/use-permissions';
+import { PermissionWarning } from '~/components/ui/permission-warning';
 import type { ApiKeySafeResponse, ApiKeyCreatedResponse } from '@pulse-flags/types';
 
 function formatExpiry(date: string | Date | null | undefined): string {
@@ -31,37 +33,53 @@ const envLabel = (prefix: string) =>
   prefix.startsWith('ps_live') ? 'production' : 'non-production';
 
 export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
-  const { data: keys, isLoading } = useApiKeys(orgSlug);
+  const { data: keys, isLoading: keysLoading } = useApiKeys(orgSlug);
   const createKey = useCreateApiKey(orgSlug);
   const revokeKey = useRevokeApiKey(orgSlug);
   const { data: allEnvs } = useAllEnvironments(orgSlug);
+
+  const { hasPerm: canRead, isLoading: permLoading } = usePermission(orgSlug, 'apikeys:read');
+  const { hasPerm: canWrite } = usePermission(orgSlug, 'apikeys:write');
 
   const [createOpen, setCreateOpen] = useState(false);
   const [generatedKey, setGeneratedKey] = useState<string | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ApiKeySafeResponse | null>(null);
 
+  const isLoading = keysLoading || permLoading;
+
+  if (!isLoading && !canRead) {
+    return (
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <PageHeader crumb={`${orgSlug} / api keys`} title="api keys" />
+        <PermissionWarning permission="apikeys:read" />
+      </main>
+    );
+  }
+
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <PageHeader crumb={`${orgSlug} / api keys`} title="api keys" command="pulse keys list --org=acme-corp">
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          <Plus className="size-3.5" strokeWidth={2.5} /> generate key
-        </button>
+      <PageHeader crumb={`${orgSlug} / api keys`} title="api keys" command={`pulse keys list --org=${orgSlug}`}>
+        {canWrite && (
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="size-3.5" strokeWidth={2.5} /> generate key
+          </button>
+        )}
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto px-10 py-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading keysâ€¦</span>
+            <span className="font-mono text-[12px]">loading keys…</span>
           </div>
         ) : (
           <div className="rounded-md border border-border bg-surface-1 max-w-[1200px] overflow-hidden">
             <div className="grid grid-cols-[1fr_140px_120px_140px_140px_60px] gap-4 px-5 py-3 border-b border-border bg-surface-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-dim">
-              <div>name Â· prefix</div>
+              <div>name · prefix</div>
               <div>environment</div>
               <div>scopes</div>
               <div>last used</div>
@@ -70,8 +88,13 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
             </div>
             {(keys ?? []).length === 0 ? (
               <div className="px-5 py-10 text-center font-mono text-[12px] text-dim">
-                // no API keys yet Â·{' '}
-                <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">generate one</button>
+                // no API keys yet
+                {canWrite && (
+                  <>
+                    {' · '}
+                    <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">generate one</button>
+                  </>
+                )}
               </div>
             ) : (
               (keys ?? []).map((k) => (
@@ -81,7 +104,7 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
                     <div className="font-mono text-[12px] text-muted-foreground mt-1 flex items-center gap-2">
                       <KeyRound className="size-3 text-dim" />
                       <span>{k.keyPrefix}</span>
-                      <span className="text-dim">{'â€¢'.repeat(28)}</span>
+                      <span className="text-dim">{'•'.repeat(28)}</span>
                     </div>
                   </div>
                   <div className="font-mono text-[12px] flex items-center gap-1.5">
@@ -98,9 +121,11 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
                   <div className="font-mono text-[12px] text-muted-foreground">{formatLastUsed(k.lastUsedAt)}</div>
                   <div className="font-mono text-[12px] text-muted-foreground">{formatExpiry(k.expiresAt)}</div>
                   <div className="flex justify-end">
-                    <button type="button" onClick={() => setRevokeTarget(k)} className="size-7 grid place-items-center rounded border border-border bg-surface-2 text-destructive hover:bg-destructive/10" aria-label="Revoke key">
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    {canWrite ? (
+                      <button type="button" onClick={() => setRevokeTarget(k)} className="size-7 grid place-items-center rounded border border-border bg-surface-2 text-destructive hover:bg-destructive/10" aria-label="Revoke key">
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               ))
@@ -108,7 +133,7 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
           </div>
         )}
         <p className="font-mono text-[11.5px] text-dim mt-4 max-w-[1200px]">
-          // keys are environment-scoped Â· prod keys cannot read non-prod data Â· format: ps_(live|test)_&lt;40 hex chars&gt;
+          // keys are environment-scoped · prod keys cannot read non-prod data · format: ps_(live|test)_&lt;40 hex chars&gt;
         </p>
       </div>
 
@@ -144,7 +169,7 @@ export function ApiKeysPage({ orgSlug }: { orgSlug: string }) {
         confirmLabel="revoke key"
         variant="danger"
         onConfirm={() => revokeTarget && revokeKey.mutate(revokeTarget.id)}
-        consequences={['Immediate loss of access for all consumers', 'Cannot be undone â€” generate a new key to replace it']}
+        consequences={['Immediate loss of access for all consumers', 'Cannot be undone — generate a new key to replace it']}
       />
     </main>
   );

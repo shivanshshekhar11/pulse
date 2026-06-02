@@ -8,6 +8,7 @@
     "start": "turbo run start",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
+    "check-all": "pnpm install && turbo run lint build test test:e2e",
     "lint": "turbo run lint"
   },
   "devDependencies": {

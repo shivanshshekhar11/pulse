@@ -1,0 +1,62 @@
+---
+title: Self-Hosting Guide
+description: Deploy Pulse to your own infrastructure.
+---
+
+Pulse is designed to be easily self-hostable in any environment. The most robust deployment strategy is to use **Docker Compose** to run all services together, placed behind a reverse proxy (like Nginx, Traefik, or Caddy) for SSL termination.
+
+## Architecture
+
+Our recommended self-hosted stack runs via Docker containers:
+
+- **Fastify API**: `api.pulseflags.live`
+- **Dashboard**: `app.pulseflags.live`
+- **Docs**: `docs.pulseflags.live`
+- **PostgreSQL**: Standard relational database for application state
+- **Redis**: In-memory store for Pub/Sub and SSE fan-out
+
+## 1. Provision a Server
+
+Provision a standard Linux virtual private server (VPS) or cloud virtual machine with at least 2GB of RAM.
+
+Ensure that Docker and Docker Compose are installed.
+
+## 2. Clone and Configure
+
+Clone the Pulse repository onto your server.
+
+```bash
+git clone https://github.com/your-username/pulse.git
+cd pulse
+```
+
+Set up your `.env` files based on the provided `.env.example` templates. 
+
+**Critical Variables:**
+- `DATABASE_URL`: Your PostgreSQL connection string
+- `REDIS_URL`: Your Redis connection string
+- `JWT_SECRET`: A strong 32+ character random string used for session tokens
+- `NEXT_PUBLIC_API_URL`: `https://api.pulseflags.live`
+
+## 3. Deploy via Docker Compose
+
+Pulse includes a `docker-compose.prod.yml` optimized for production deployments.
+
+```bash
+# Build and start all services in detached mode
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+## 4. Reverse Proxy and SSL
+
+You must put the containers behind a reverse proxy to handle HTTPS. 
+
+For example, using Nginx:
+1. Create server blocks for `api`, `app`, and `docs` that proxy pass to the corresponding Docker container ports (API is port 4000, Dashboard on 3001, Docs on 3002).
+2. Run Certbot to automatically fetch and configure Let's Encrypt SSL certificates:
+
+```bash
+certbot --nginx -d api.pulseflags.live -d app.pulseflags.live -d docs.pulseflags.live
+```
+
+Your self-hosted Pulse instance is now live and accessible!

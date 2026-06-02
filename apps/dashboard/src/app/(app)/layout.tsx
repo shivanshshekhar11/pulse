@@ -3,7 +3,7 @@ import { auth } from '~/lib/auth';
 import { AppShell } from '~/components/layout/app-shell';
 
 /**
- * App layout â€” authenticated shell.
+ * App layout — authenticated shell.
  *
  * auth() reads the Auth.js session server-side. If there is no valid
  * session the user is redirected to /login before any page content renders.

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { PulseTestClient } from '@pulse-flags/sdk';
 
-const apiUrl = process.env.NEXT_PUBLIC_PULSE_URL || 'http://127.0.0.1:3001';
+const apiUrl = process.env.NEXT_PUBLIC_PULSE_URL || 'http://localhost:4000';
 
 test.describe('NovaPay Feature Flags', () => {
   let pulse: InstanceType<typeof PulseTestClient>;
@@ -13,7 +13,7 @@ test.describe('NovaPay Feature Flags', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'alice@acme.com',
+        email: 'alice@novapay.com',
         password: 'password123',
       }),
     });
@@ -27,8 +27,8 @@ test.describe('NovaPay Feature Flags', () => {
     pulse = new PulseTestClient({
       apiUrl,
       accessToken: data.accessToken,
-      orgSlug: 'acme-corp',
-      projectSlug: 'web-app',
+      orgSlug: 'novapay',
+      projectSlug: 'novapay-web',
       envName: 'development',
     });
   });
@@ -65,6 +65,7 @@ test.describe('NovaPay Feature Flags', () => {
   });
 
   test('shows customized pricing CTA text', async ({ page }) => {
+    await pulse.clearRules('pricing_cta_text');
     await pulse.setDefault('pricing_cta_text', 'Start Free Trial');
     await pulse.enable('pricing_cta_text');
 
@@ -117,6 +118,7 @@ test.describe('NovaPay Feature Flags', () => {
     await pulse.setDefault('new_homepage_hero', false);
 
     // Modify the JSON config default
+    await pulse.clearRules('theme_config');
     await pulse.setDefault('theme_config', { radius: 24 });
     await pulse.enable('theme_config');
 
@@ -129,7 +131,7 @@ test.describe('NovaPay Feature Flags', () => {
 
   test('shows export feature for beta segment users', async ({ page, request }) => {
     // 1. Create a segment via API directly using request context
-    const segmentRes = await request.post(`${apiUrl}/api/v1/orgs/acme-corp/segments`, {
+    const segmentRes = await request.post(`${apiUrl}/api/v1/orgs/novapay/segments`, {
       headers: { 
         'Content-Type': 'application/json',
         Authorization: `Bearer ${pulse.getToken}` 
@@ -177,7 +179,7 @@ test.describe('NovaPay Feature Flags', () => {
     await expect(exportBtn).toBeVisible();
 
     // Clean up segment
-    await request.delete(`${apiUrl}/api/v1/orgs/acme-corp/segments/${segmentId}`, {
+    await request.delete(`${apiUrl}/api/v1/orgs/novapay/segments/${segmentId}`, {
       headers: { Authorization: `Bearer ${pulse.getToken}` }
     });
   });

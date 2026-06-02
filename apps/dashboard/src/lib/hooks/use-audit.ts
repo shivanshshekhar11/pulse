@@ -13,7 +13,7 @@ export function useAuditLogs(orgSlug: string, filters: AuditLogFilters = {}) {
     queryKey: ['audit', orgSlug, filters],
     queryFn: () => auditApi.list(orgSlug, filters, token),
     enabled: !!token,
-    // Audit logs are append-only â€” 60s stale time is fine
+    // Audit logs are append-only — 60s stale time is fine
     staleTime: 60_000,
   });
 }

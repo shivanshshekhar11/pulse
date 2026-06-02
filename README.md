@@ -4,8 +4,12 @@
 
 ## Architecture
 
-```
-Organization → Project → Environment → Flag → Rules
+```mermaid
+graph LR
+    O[Organization] --> P[Project]
+    P --> E[Environment]
+    E --> F[Flag]
+    F --> R[Rules]
 ```
 
 **Key Features:**
@@ -23,6 +27,22 @@ Organization → Project → Environment → Flag → Rules
 - **SDK:** TypeScript (ESM + CJS) with three-tier fallback
 - **Monorepo:** Turborepo + pnpm workspaces
 
+```mermaid
+sequenceDiagram
+    participant SDK as PulseClient
+    participant API as API Server
+    participant Redis as Redis Pub/Sub
+
+    SDK->>API: GET /sdk/v1/ruleset
+    API-->>SDK: Full Ruleset
+    SDK->>API: GET /sdk/v1/stream (SSE)
+    API-->>SDK: connected + retry hint
+    Note over API,Redis: Wait for flag mutations
+    Redis-->>API: publish pulse:env:{id}
+    API-->>SDK: event: ruleset:updated
+    SDK->>SDK: Parse & Update In-Memory Cache
+```
+
 ## Quick Start
 
 ```bash
@@ -39,7 +59,9 @@ pnpm db:push
 pnpm dev
 ```
 
-See `SETUP.md` for detailed setup instructions.
+```
+
+See `apps/docs/content/docs/self-hosting.mdx` for detailed production setup instructions.
 
 ## Project Structure
 
@@ -69,6 +91,8 @@ pnpm db:studio        # Open Drizzle Studio
 ```
 
 ## Documentation
+
+Visit the **Pulse Documentation** (run the docs app or see the live deployment) for the Quickstart, full SDK Guide, and interactive API Reference.
 
 See `plan.md` for the complete specification and architecture decisions.
 

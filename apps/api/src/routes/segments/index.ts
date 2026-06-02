@@ -19,6 +19,8 @@ export default async function segmentRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/segments', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Segments'],
+      summary: 'List Segments',
       params: ListSegmentsRouteSchema.params,
       querystring: ListSegmentsRouteSchema.querystring,
       response: ListSegmentsRouteSchema.response,
@@ -45,6 +47,8 @@ export default async function segmentRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/segments', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Segments'],
+      summary: 'Create Segment',
       params: CreateSegmentRouteSchema.params,
       body: CreateSegmentRouteSchema.body,
       response: CreateSegmentRouteSchema.response,
@@ -82,6 +86,8 @@ export default async function segmentRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/segments/:segmentId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Segments'],
+      summary: 'Get Segment',
       params: GetSegmentRouteSchema.params,
       response: GetSegmentRouteSchema.response,
     },
@@ -112,6 +118,8 @@ export default async function segmentRoutes(fastify: FastifyInstance) {
   f.patch('/:orgSlug/segments/:segmentId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Segments'],
+      summary: 'Update Segment',
       params: UpdateSegmentRouteSchema.params,
       body: UpdateSegmentRouteSchema.body,
       response: UpdateSegmentRouteSchema.response,
@@ -157,6 +165,8 @@ export default async function segmentRoutes(fastify: FastifyInstance) {
   f.delete('/:orgSlug/segments/:segmentId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Segments'],
+      summary: 'Delete Segment',
       params: DeleteSegmentRouteSchema.params,
     },
   }, async (request, reply) => {

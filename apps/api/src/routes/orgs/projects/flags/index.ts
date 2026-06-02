@@ -31,6 +31,8 @@ export default async function flagRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/projects/:projectSlug/envs/:envName/flags', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Flags'],
+      summary: 'List Flags',
       params: ListFlagsRouteSchema.params,
       querystring: ListFlagsRouteSchema.querystring,
       response: ListFlagsRouteSchema.response,
@@ -42,7 +44,7 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     const ctx = await resolveEnvironment(reply, request.id, orgSlug, projectSlug, envName);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id, ctx.project.id))) return;
 
     const flagList = await flagService.listFlags(ctx.environment.id, limit, offset);
     return reply.send({ data: flagList });
@@ -52,6 +54,8 @@ export default async function flagRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/projects/:projectSlug/envs/:envName/flags', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Flags'],
+      summary: 'Create Flag',
       params: CreateFlagRouteSchema.params,
       body: CreateFlagRouteSchema.body,
       response: CreateFlagRouteSchema.response,
@@ -64,7 +68,7 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     const ctx = await resolveEnvironment(reply, requestId, orgSlug, projectSlug, envName);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'flags:write', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'flags:write', ctx.org.id, ctx.project.id))) return;
 
     if (await flagService.isFlagKeyTaken(ctx.environment.id, request.body.key)) {
       return reply.code(400).send({
@@ -93,6 +97,8 @@ export default async function flagRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Flags'],
+      summary: 'Get Flag',
       params: GetFlagRouteSchema.params,
       response: GetFlagRouteSchema.response,
     },
@@ -103,7 +109,7 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     const ctx = await resolveEnvironment(reply, requestId, orgSlug, projectSlug, envName);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id, ctx.project.id))) return;
 
     const flag = await flagService.findFlagByKey(ctx.environment.id, flagKey);
     if (!flag) {
@@ -119,6 +125,8 @@ export default async function flagRoutes(fastify: FastifyInstance) {
   f.patch('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Flags'],
+      summary: 'Update Flag',
       params: UpdateFlagRouteSchema.params,
       body: UpdateFlagRouteSchema.body,
       response: UpdateFlagRouteSchema.response,
@@ -131,7 +139,7 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     const ctx = await resolveEnvironment(reply, requestId, orgSlug, projectSlug, envName);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'flags:write', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'flags:write', ctx.org.id, ctx.project.id))) return;
 
     const flag = await flagService.findFlagByKey(ctx.environment.id, flagKey);
     if (!flag) {
@@ -172,6 +180,8 @@ export default async function flagRoutes(fastify: FastifyInstance) {
   f.delete('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Flags'],
+      summary: 'Delete Flag',
       params: DeleteFlagRouteSchema.params,
     },
   }, async (request, reply) => {
@@ -182,7 +192,7 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     const ctx = await resolveEnvironment(reply, requestId, orgSlug, projectSlug, envName);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'flags:write', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'flags:write', ctx.org.id, ctx.project.id))) return;
 
     const flag = await flagService.findFlagByKey(ctx.environment.id, flagKey);
     if (!flag) {
@@ -212,6 +222,8 @@ export default async function flagRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/projects/:projectSlug/envs/:envName/flags/stream', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Flags'],
+      summary: 'Stream Flags (SSE)',
       params: ListFlagsRouteSchema.params,
     },
   }, async (request, reply) => {
@@ -221,7 +233,7 @@ export default async function flagRoutes(fastify: FastifyInstance) {
     const ctx = await resolveEnvironment(reply, requestId, orgSlug, projectSlug, envName);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'flags:read', ctx.org.id, ctx.project.id))) return;
 
     // Set SSE headers
     reply.raw.setHeader('Content-Type', 'text/event-stream');

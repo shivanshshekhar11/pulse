@@ -14,6 +14,8 @@ export default async function auditLogRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/audit-logs', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Audit Logs'],
+      summary: 'List Audit Logs',
       params: ListAuditLogsRouteSchema.params,
       querystring: ListAuditLogsRouteSchema.querystring,
       response: ListAuditLogsRouteSchema.response,

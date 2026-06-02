@@ -1,0 +1,46 @@
+---
+title: Configuration
+description: Initialize and configure the Pulse Client.
+---
+
+The `PulseClient` is the entry point for all SDK operations. You should initialize it once and share it across your application.
+
+## Initialization
+
+```typescript
+import { PulseClient } from '@pulse-flags/sdk';
+
+const pulse = new PulseClient({
+  apiKey: process.env.NEXT_PUBLIC_PULSE_API_KEY,
+  apiUrl: 'https://api.pulseflags.live', // Optional: defaults to self-hosted or SaaS URL
+});
+```
+
+### Options
+
+| Option | Type | Required | Description |
+|---|---|---|---|
+| `apiKey` | `string` | Yes* | Your Environment API key (`ps_live_...` or `ps_test_...`). *Defaults to `process.env.PULSE_API_KEY` if omitted. |
+| `apiUrl` | `string` | No | The URL of your Pulse API. Required if you are self-hosting. |
+| `pollInterval` | `number` | No | Interval (in ms) to fallback to HTTP polling if SSE disconnects. Default `30000`. |
+
+## Synchronous Connection
+
+To ensure flags are ready before rendering, you can call `connect()` asynchronously.
+
+```typescript
+await pulse.connect();
+// Flags are now loaded and ready for 0-latency evaluation
+```
+
+## Default Values
+
+Before `connect()` finishes (or if the network fails completely), the SDK will return the `defaultValue` you provide during evaluation. You can also seed defaults globally:
+
+```typescript
+pulse.setDefault('new-dashboard', false);
+```
+
+When you evaluate `new-dashboard`, if the network hasn't synced the ruleset yet, the SDK will gracefully fall back to `false` without throwing an error.
+
+See the [Evaluation](/docs/sdk/evaluation) guide to learn how to evaluate your flags.

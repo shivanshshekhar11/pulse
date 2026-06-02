@@ -17,6 +17,8 @@ export default async function apiKeyRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/api-keys', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['API Keys'],
+      summary: 'List API Keys',
       params: ListApiKeysRouteSchema.params,
       response: ListApiKeysRouteSchema.response,
     },
@@ -54,6 +56,8 @@ export default async function apiKeyRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/api-keys', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['API Keys'],
+      summary: 'Create API Key',
       params: CreateApiKeyRouteSchema.params,
       body: CreateApiKeyRouteSchema.body,
       response: CreateApiKeyRouteSchema.response,
@@ -109,6 +113,8 @@ export default async function apiKeyRoutes(fastify: FastifyInstance) {
   f.delete('/:orgSlug/api-keys/:keyId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['API Keys'],
+      summary: 'Revoke API Key',
       params: RevokeApiKeyRouteSchema.params,
     },
   }, async (request, reply) => {

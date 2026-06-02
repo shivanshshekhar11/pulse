@@ -21,6 +21,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // POST /api/v1/auth/register
   f.post('/register', {
     schema: {
+      tags: ['Authentication'],
+      summary: 'Register a new user',
       body: RegisterRouteSchema.body,
       response: RegisterRouteSchema.response,
     },
@@ -71,6 +73,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // POST /api/v1/auth/login
   f.post('/login', {
     schema: {
+      tags: ['Authentication'],
+      summary: 'Login',
       body: LoginRouteSchema.body,
       response: LoginRouteSchema.response,
     },
@@ -116,6 +120,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // POST /api/v1/auth/refresh
   f.post('/refresh', {
     schema: {
+      tags: ['Authentication'],
+      summary: 'Refresh Access Token',
       body: RefreshRouteSchema.body,
       response: RefreshRouteSchema.response,
     },
@@ -168,6 +174,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // POST /api/v1/auth/logout
   f.post('/logout', {
     schema: {
+      tags: ['Authentication'],
+      summary: 'Logout',
       body: LogoutRouteSchema.body,
       response: LogoutRouteSchema.response,
     },
@@ -189,6 +197,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   f.get('/me', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Authentication'],
+      summary: 'Get Current User',
       response: MeRouteSchema.response,
     },
   }, async (request, reply) => {
@@ -214,6 +224,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   f.patch('/me', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Authentication'],
+      summary: 'Update Current User',
       body: UpdateUserRouteSchema.body,
       response: UpdateUserRouteSchema.response,
     },
@@ -269,6 +281,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   f.post('/me/password', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Authentication'],
+      summary: 'Change Password',
       body: ChangePasswordRouteSchema.body,
       response: ChangePasswordRouteSchema.response,
     },
@@ -313,6 +327,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
   f.get('/me/orgs', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Authentication'],
+      summary: 'List User Organizations',
       response: ListUserOrgsRouteSchema.response,
     },
   }, async (request, reply) => {

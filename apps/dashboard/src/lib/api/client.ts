@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Base fetch client for the Pulse API.
  *
  * All requests go through this function which:
@@ -9,11 +9,9 @@
  * Usage:
  *   const flags = await apiGet<FlagResponse[]>('/api/v1/orgs/acme/projects/web/envs/staging/flags', token);
  */
+import { env } from '~/env';
 
-const API_URL =
-  typeof window !== 'undefined'
-    ? (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000')
-    : (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000');
+const API_URL = env.NEXT_PUBLIC_API_URL;
 
 export class ApiError extends Error {
   constructor(

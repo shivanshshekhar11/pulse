@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Auth.js v5 configuration for the Pulse dashboard.
  *
  * Uses a custom Credentials provider that calls the Fastify API's
@@ -7,8 +7,8 @@
  * API call.
  *
  * Token storage:
- * - accessToken  â†’ JWT session (in-memory in the browser)
- * - refreshToken â†’ HttpOnly cookie via Auth.js session
+ * - accessToken  → JWT session (in-memory in the browser)
+ * - refreshToken → HttpOnly cookie via Auth.js session
  *
  * The session is extended with the user's accessToken so the typed API
  * client can attach it to every request without re-reading cookies.
@@ -17,8 +17,9 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
+import { env } from '~/env';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_URL = env.NEXT_PUBLIC_API_URL;
 
 const LoginSchema = z.object({
   email: z.string().email(),
@@ -65,7 +66,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               orgSlug = orgsBody.data[0]?.slug ?? '';
             }
           } catch {
-            // Non-fatal â€” user will see landing page
+            // Non-fatal — user will see landing page
           }
 
           return {

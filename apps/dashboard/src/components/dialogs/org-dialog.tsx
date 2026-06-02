@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -71,7 +71,7 @@ export function OrgDialog({
               }}
             />
           </Field>
-          <Field label="slug" required hint="lowercase Â· hyphens" error={slugError}>
+          <Field label="slug" required hint="lowercase · hyphens" error={slugError}>
             <Input
               mono
               placeholder="acme-corp"
@@ -83,7 +83,7 @@ export function OrgDialog({
       <DialogFooter>
         {dismissable ? <Button variant="ghost" onClick={onClose}>cancel</Button> : <span />}
         <Button variant="primary" icon={Plus} disabled={!canSubmit || loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'creatingâ€¦' : 'create organization'}
+          {loading ? 'creating…' : 'create organization'}
         </Button>
       </DialogFooter>
     </Dialog>

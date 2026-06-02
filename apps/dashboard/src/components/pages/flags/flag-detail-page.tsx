@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -20,9 +20,10 @@ import {
   useDeleteRule,
 } from '~/lib/hooks/use-rules';
 import { useAuditLogs } from '~/lib/hooks/use-audit';
+import { usePermission } from '~/lib/hooks/use-permissions';
 import type { RuleResponse, AuditLogResponse } from '@pulse-flags/types';
 
-// Condition tree â€” handles both local shape (op/children/leaf) and API shape (operator/conditions/attribute)
+// Condition tree — handles both local shape (op/children/leaf) and API shape (operator/conditions/attribute)
 type Tree =
   | { op: 'AND' | 'OR' | 'NOT'; children: Array<Tree | Leaf> }
   | { operator: 'AND' | 'OR' | 'NOT'; conditions: Array<Tree | Leaf>; condition?: Tree | Leaf }
@@ -59,6 +60,8 @@ export function FlagDetailPage({
   const { data: auditPage } = useAuditLogs(orgSlug, { limit: 5 });
   const updateFlag = useUpdateFlag(orgSlug, projectSlug, envName, flagKey);
   const deleteFlag = useDeleteFlag(orgSlug, projectSlug, envName);
+  const { hasPerm: canWriteFlags } = usePermission(orgSlug, 'flags:write');
+  const { hasPerm: canWriteRules } = usePermission(orgSlug, 'rules:write');
 
   const [editFlagOpen, setEditFlagOpen] = useState(false);
   const [addRuleOpen, setAddRuleOpen] = useState(false);
@@ -81,7 +84,7 @@ export function FlagDetailPage({
     return (
       <div className="flex-1 flex items-center justify-center text-muted-foreground">
         <Loader2 className="size-5 animate-spin mr-2" />
-        <span className="font-mono text-[12px]">loading flagâ€¦</span>
+        <span className="font-mono text-[12px]">loading flag…</span>
       </div>
     );
   }
@@ -90,7 +93,7 @@ export function FlagDetailPage({
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4">
         <p className="font-mono text-[13px] text-muted-foreground">Flag not found.</p>
-        <Link href={backHref} className="font-mono text-[12px] text-primary hover:underline">â† back to flags</Link>
+        <Link href={backHref} className="font-mono text-[12px] text-primary hover:underline">← back to flags</Link>
       </div>
     );
   }
@@ -130,28 +133,30 @@ export function FlagDetailPage({
               <button type="button" aria-label="Copy key" onClick={() => navigator.clipboard?.writeText(flag.key)} className="text-dim hover:text-foreground">
                 <Copy className="size-3.5" />
               </button>
-              <span className="text-dim">Â·</span>
+              <span className="text-dim">·</span>
               <span className="text-dim">v{flag.version}</span>
               <Lock className="size-3 text-dim" />
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button type="button" onClick={() => setEditFlagOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground">
-              <Pencil className="size-3.5" /> edit
-            </button>
-            <button
-              type="button"
-              onClick={() => setArchiveOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground"
-            >
-              <Archive className="size-3.5" />
-              {flag.enabled ? 'archive' : 'unarchive'}
-            </button>
-            <button type="button" onClick={() => setDeleteOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-destructive hover:bg-destructive/10">
-              <Trash2 className="size-3.5" /> delete
-            </button>
-          </div>
+          {canWriteFlags && (
+            <div className="flex items-center gap-2 shrink-0">
+              <button type="button" onClick={() => setEditFlagOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground">
+                <Pencil className="size-3.5" /> edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setArchiveOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-muted-foreground hover:text-foreground"
+              >
+                <Archive className="size-3.5" />
+                {flag.enabled ? 'archive' : 'unarchive'}
+              </button>
+              <button type="button" onClick={() => setDeleteOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-surface-1 border border-border text-destructive hover:bg-destructive/10">
+                <Trash2 className="size-3.5" /> delete
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Master switch */}
@@ -164,10 +169,10 @@ export function FlagDetailPage({
               Flag is {flag.enabled ? <>live in <span className="text-warning font-mono">{envName}</span></> : <span className="text-muted-foreground">disabled</span>}
             </div>
             <div className="font-mono text-[12px] text-muted-foreground mt-1">
-              {rules?.length ?? 0} targeting rules Â· last updated {formatRelative(flag.updatedAt as string | Date)}
+              {rules?.length ?? 0} targeting rules · last updated {formatRelative(flag.updatedAt as string | Date)}
             </div>
           </div>
-          <Toggle on={flag.enabled} onChange={handleToggle} disabled={updateFlag.isPending} />
+          <Toggle on={flag.enabled} onChange={handleToggle} disabled={updateFlag.isPending || !canWriteFlags} />
         </div>
       </div>
 
@@ -190,30 +195,33 @@ export function FlagDetailPage({
 
             <Section
               label="rules"
-              hint="evaluated top-to-bottom Â· first match wins"
+              hint="evaluated top-to-bottom · first match wins"
               action={
-                <button type="button" onClick={() => setAddRuleOpen(true)} className="flex items-center gap-1.5 text-[12px] font-mono text-muted-foreground hover:text-foreground">
-                  <Plus className="size-3.5" /> add rule
-                </button>
+                canWriteRules && (
+                  <button type="button" onClick={() => setAddRuleOpen(true)} className="flex items-center gap-1.5 text-[12px] font-mono text-muted-foreground hover:text-foreground">
+                    <Plus className="size-3.5" /> add rule
+                  </button>
+                )
               }
             >
               {!rules || rules.length === 0 ? (
                 <div className="font-mono text-[12px] text-dim p-4 rounded-md border border-border bg-surface-1">
-                  // no rules â€” flag returns default value for all users
+                  // no rules — flag returns default value for all users
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="font-mono text-[11px] text-dim">drag rules to reorder priority</div>
+                  {canWriteRules && <div className="font-mono text-[11px] text-dim">drag rules to reorder priority</div>}
                   {(orderedRules.length > 0 ? orderedRules : rules).map((rule, i) => (
                     <RuleCard
                       key={rule.id}
                       index={i}
                       rule={rule}
-                      draggable={rules.length > 1}
+                      draggable={rules.length > 1 && canWriteRules}
                       dragActive={dragId === rule.id}
                       onDragStart={() => setDragId(rule.id)}
                       onDragEnd={() => setDragId(null)}
                       onDrop={() => {
+                        if (!canWriteRules) return;
                         if (!dragId || dragId === rule.id) return;
                         const current = orderedRules.length > 0 ? orderedRules : rules;
                         const fromIndex = current.findIndex((r) => r.id === dragId);
@@ -229,8 +237,8 @@ export function FlagDetailPage({
                           { onError: () => setOrderedRules(rules) },
                         );
                       }}
-                      onEdit={() => setEditRuleId(rule.id)}
-                      onDelete={() => setDeleteRuleId(rule.id)}
+                      onEdit={canWriteRules ? () => setEditRuleId(rule.id) : undefined}
+                      onDelete={canWriteRules ? () => setDeleteRuleId(rule.id) : undefined}
                     />
                   ))}
                 </div>
@@ -239,7 +247,7 @@ export function FlagDetailPage({
 
             <Section label="sdk usage" hint="@pulse-flags/sdk">
               <pre className="font-mono text-[12.5px] p-5 rounded-md bg-surface-1 border border-border overflow-x-auto leading-relaxed">
-                <span className="text-muted-foreground">{'// in-memory Â· zero-latency\n'}</span>
+                <span className="text-muted-foreground">{'// in-memory · zero-latency\n'}</span>
                 <span className="text-magenta">const</span>{' '}
                 <span className="text-foreground">{flag.type === 'boolean' ? 'enabled' : 'value'}</span>{' '}
                 <span className="text-muted-foreground">=</span>{' '}
@@ -463,7 +471,7 @@ function RuleCard({
           <span className="ml-2 text-[10px] text-dim">drag to reorder</span>
         )}
         <span className="flex-1" />
-        <span className="text-muted-foreground">â†’ return</span>
+        <span className="text-muted-foreground">→ return</span>
         <span className="text-primary">{JSON.stringify(rule.value)}</span>
         {onEdit && (
           <button type="button" onClick={onEdit} className="ml-2 flex items-center gap-1 text-[10.5px] text-muted-foreground hover:text-foreground">
@@ -514,7 +522,7 @@ function RuleTree({ tree, depth = 0 }: { tree: Tree; depth?: number }) {
     );
   }
 
-  // AND/OR/NOT node â€” handle both 'op' (local) and 'operator' (API) field names
+  // AND/OR/NOT node — handle both 'op' (local) and 'operator' (API) field names
   const node = tree as {
     op?: string;
     operator?: string;
@@ -572,7 +580,7 @@ function AuditEntry({ entry, isLast }: { entry: AuditLogResponse; isLast: boolea
       <div className="text-dim mt-1 flex items-center gap-2">
         <GitCommit className="size-3" />
         <span>{entry.id.slice(0, 7)}</span>
-        <span>Â·</span>
+        <span>·</span>
         <span>{formatRelative(entry.createdAt as string | Date)}</span>
       </div>
     </li>

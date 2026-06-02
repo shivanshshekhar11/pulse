@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -17,35 +17,33 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-black">
-      <div className="mx-auto w-full max-w-md p-6">
-        <div className="flex flex-col items-center space-y-6 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10">
-            <AlertCircle className="h-6 w-6 text-red-500" />
-          </div>
-          
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold tracking-tight text-zinc-50">
-              Something went wrong!
-            </h2>
-            <p className="text-sm text-zinc-400">
-              An unexpected error occurred in the application.
-            </p>
-            {error.message && (
-              <div className="mt-4 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-left">
-                <p className="font-mono text-[11px] text-red-400">{error.message}</p>
-              </div>
-            )}
-          </div>
-
-          <Button 
-            onClick={() => reset()}
-            variant="outline" 
-            className="mt-4 w-full sm:w-auto"
-          >
-            Try again
-          </Button>
+    <div className="size-full flex bg-background text-foreground bg-grid scanlines min-h-screen items-center justify-center">
+      <div className="flex flex-col items-center text-center p-8 max-w-[500px]">
+        <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-dim mb-4">// error 500</div>
+        
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 mb-6">
+          <AlertCircle className="h-5 w-5 text-destructive" />
         </div>
+        
+        <h2 className="text-[28px] leading-tight mb-4">
+          Something went wrong!
+        </h2>
+        <p className="font-mono text-[13px] text-muted-foreground mb-6">
+          An unexpected error occurred in the application.
+        </p>
+        
+        {error.message && (
+          <div className="w-full mb-8 rounded-md border border-destructive/20 bg-destructive/10 p-4 text-left">
+            <p className="font-mono text-[12px] text-destructive leading-relaxed break-words">{error.message}</p>
+          </div>
+        )}
+
+        <Button 
+          onClick={() => reset()}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-md font-mono text-[13px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+        >
+          try again
+        </Button>
       </div>
     </div>
   );

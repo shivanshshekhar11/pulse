@@ -21,6 +21,8 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/projects', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Projects'],
+      summary: 'List Projects',
       params: ListProjectsRouteSchema.params,
       response: ListProjectsRouteSchema.response,
     },
@@ -45,6 +47,8 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/projects', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Projects'],
+      summary: 'Create Project',
       params: CreateProjectRouteSchema.params,
       body: CreateProjectRouteSchema.body,
       response: CreateProjectRouteSchema.response,
@@ -104,6 +108,8 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/projects/:projectSlug', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Projects'],
+      summary: 'Get Project',
       params: GetProjectRouteSchema.params,
       response: GetProjectRouteSchema.response,
     },
@@ -118,14 +124,14 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'projects:read', org.id))) return;
-
     const project = await projectService.findProjectBySlug(org.id, projectSlug);
     if (!project) {
       return reply.code(404).send({
         error: { code: 'NOT_FOUND', message: 'Project not found', requestId },
       });
     }
+
+    if (!(await assertPermission(request, reply, 'projects:read', org.id, project.id))) return;
 
     return reply.send({ data: project });
   });
@@ -134,6 +140,8 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   f.patch('/:orgSlug/projects/:projectSlug', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Projects'],
+      summary: 'Update Project',
       params: UpdateProjectRouteSchema.params,
       body: UpdateProjectRouteSchema.body,
       response: UpdateProjectRouteSchema.response,
@@ -150,14 +158,14 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'projects:write', org.id))) return;
-
     const project = await projectService.findProjectBySlug(org.id, projectSlug);
     if (!project) {
       return reply.code(404).send({
         error: { code: 'NOT_FOUND', message: 'Project not found', requestId },
       });
     }
+
+    if (!(await assertPermission(request, reply, 'projects:write', org.id, project.id))) return;
 
     const updated = await projectService.updateProject(project.id, request.body);
     if (!updated) {
@@ -184,6 +192,8 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   f.delete('/:orgSlug/projects/:projectSlug', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Projects'],
+      summary: 'Delete Project',
       params: DeleteProjectRouteSchema.params,
     },
   }, async (request, reply) => {
@@ -198,14 +208,14 @@ export default async function projectRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!(await assertPermission(request, reply, 'projects:write', org.id))) return;
-
     const project = await projectService.findProjectBySlug(org.id, projectSlug);
     if (!project) {
       return reply.code(404).send({
         error: { code: 'NOT_FOUND', message: 'Project not found', requestId },
       });
     }
+
+    if (!(await assertPermission(request, reply, 'projects:write', org.id, project.id))) return;
 
     await projectService.deleteProject(project.id);
 
@@ -226,6 +236,8 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/projects/:projectSlug/environments', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Environments'],
+      summary: 'List Environments',
       params: ListEnvironmentsRouteSchema.params,
       response: ListEnvironmentsRouteSchema.response,
     },
@@ -257,6 +269,8 @@ export default async function projectRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/projects/:projectSlug/environments', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Environments'],
+      summary: 'Create Environment',
       params: CreateEnvironmentRouteSchema.params,
       body: CreateEnvironmentRouteSchema.body,
       response: CreateEnvironmentRouteSchema.response,

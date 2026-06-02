@@ -32,6 +32,8 @@ export default async function sdkRoutes(fastify: FastifyInstance) {
   // The SDK calls this once on startup to populate its in-memory ruleset.
   f.get('/ruleset', {
     schema: {
+      tags: ['SDK'],
+      summary: 'Get Ruleset',
       response: GetRulesetRouteSchema.response,
     },
   }, async (request, reply) => {
@@ -75,7 +77,12 @@ export default async function sdkRoutes(fastify: FastifyInstance) {
   //
   // The subscriber uses a dedicated Redis connection (redis.duplicate()) because
   // ioredis cannot use the same connection for both commands and subscriptions.
-  fastify.get('/stream', async (request, reply) => {
+  fastify.get('/stream', {
+    schema: {
+      tags: ['SDK'],
+      summary: 'Stream Ruleset Updates (SSE)',
+    },
+  }, async (request, reply) => {
     const key = request.apiKey!;
     const requestId = request.id;
 

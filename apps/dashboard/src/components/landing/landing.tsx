@@ -1,6 +1,8 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import { env } from '~/env';
 import {
   Zap,
   Radio,
@@ -9,7 +11,6 @@ import {
   Layers,
   Hash,
   ArrowRight,
-  Github,
   Check,
   Lock,
 } from 'lucide-react';
@@ -17,25 +18,24 @@ import { TerminalHero } from './terminal-hero';
 import { Architecture } from './architecture';
 
 const FEATURES = [
-  { icon: Zap, color: 'primary', title: 'Local evaluation', desc: 'SDK downloads the ruleset once and evaluates in memory. Sub-millisecond flag checks, zero per-request network calls.' },
-  { icon: Radio, color: 'info', title: 'Real-time SSE', desc: 'Redis Pub/Sub fans out flag changes to every connected SDK in under 200ms. No polling, no stale state.' },
-  { icon: GitBranch, color: 'magenta', title: 'Custom rule engine', desc: 'Recursive AND/OR/NOT trees with operators for equality, ranges, regex, and reusable segments â€” modeled as data, not code.' },
-  { icon: Hash, color: 'warning', title: 'Consistent hashing', desc: 'SHA-256(flagKey:userId) % 100 buckets users deterministically. Same user, same variant, every time â€” no DB lookup.' },
-  { icon: Shield, color: 'primary', title: 'Multi-tenant RBAC', desc: 'Org â†’ Project â†’ Environment hierarchy with two-level role overrides. Environment-scoped API keys from day one.' },
-  { icon: Layers, color: 'info', title: 'Three-tier fallback', desc: 'In-memory â†’ cached snapshot â†’ developer defaults. Your app never breaks, even during network partitions.' },
+  { icon: Zap, color: 'primary', title: 'Zero Latency Evaluation', desc: 'Evaluations happen locally in memory. Deliver lightning-fast experiences without adding network overhead to your requests.' },
+  { icon: Radio, color: 'info', title: 'Real-Time Sync', desc: 'Updates propagate to your servers instantly. Turn off a broken feature and see it reflected globally in milliseconds.' },
+  { icon: GitBranch, color: 'magenta', title: 'Granular Targeting', desc: 'Roll out features to specific regions, beta testers, or premium users with our powerful segmentation and rule engine.' },
+  { icon: Hash, color: 'warning', title: 'Progressive Rollouts', desc: 'Safely increase exposure from 1% to 100%. Our deterministic assignment ensures users stay in their assigned bucket.' },
+  { icon: Shield, color: 'primary', title: 'Enterprise Security', desc: 'Built for scale with granular Role-Based Access Control, project isolation, and comprehensive audit logs.' },
+  { icon: Layers, color: 'info', title: 'Always-On Reliability', desc: 'Designed for resilience. Even during network partitions, your applications continue serving flags using cached state.' },
 ] as const;
 
 const STATS = [
-  { value: '<1ms', label: 'flag eval' },
-  { value: '<200ms', label: 'SSE propagation' },
-  { value: '99.99%', label: 'uptime' },
-  { value: 'MIT', label: 'open source' },
+  { value: '<1ms', label: 'evaluation time' },
+  { value: 'Real-time', label: 'updates' },
+  { value: '99.99%', label: 'uptime SLA' },
+  { value: 'Infinite', label: 'scalability' },
 ];
 
 const TICKER_ITEMS = [
-  '@pulse-flags/sdk', 'self-hostable', 'fastify', 'drizzle orm',
-  'redis pub/sub', 'next.js 16', 'consistent hashing', 'optimistic locking',
-  'MIT licensed', 'zod schemas', 'typescript', 'postgres',
+  'zero latency', 'real-time sync', 'granular targeting', 'multi-tier fallbacks',
+  'progressive delivery', 'audit logs', 'custom segments', 'enterprise rbac',
 ];
 
 const SDK_SNIPPET = `import { PulseClient } from '@pulse-flags/sdk';
@@ -50,7 +50,7 @@ const client = new PulseClient({
 
 await client.connect();
 
-// in-memory Â· zero-latency Â· always-on
+// Synchronous, zero-latency evaluation
 const show = client.isEnabled('new_dashboard', {
   userId, country, plan,
 });`;
@@ -64,6 +64,15 @@ const COLOR_MAP: Record<string, string> = {
 };
 
 export function Landing() {
+  const { data: session } = useSession();
+  const isLoggedIn = !!session;
+  const dashboardUrl = isLoggedIn
+    ? session.orgSlug
+      ? `/${session.orgSlug}/projects`
+      : '/_/projects'
+    : '/login';
+  const docsUrl = env.NEXT_PUBLIC_DOCS_URL || 'https://pulse-flags.com/docs';
+
   return (
     <div className="size-full overflow-y-auto bg-background text-foreground relative">
       {/* Ambient glow */}
@@ -79,31 +88,56 @@ export function Landing() {
               </div>
               <span className="font-mono text-[15px]">
                 pulse
-            </span>
+              </span>
           </div>
           <nav className="hidden md:flex items-center gap-6 font-mono text-[12.5px] text-muted-foreground">
-            {['features', 'architecture', 'sdk', 'docs'].map((item) => (
-              <a key={item} className="hover:text-foreground cursor-pointer">
-                {item}
-              </a>
-            ))}
+            <a href="#features" className="hover:text-foreground cursor-pointer">
+              features
+            </a>
+            <a href="#architecture" className="hover:text-foreground cursor-pointer">
+              platform
+            </a>
+            <a 
+              href="https://www.npmjs.com/package/@pulse-flags/sdk" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground cursor-pointer"
+            >
+              sdk
+            </a>
+            <a
+              href={docsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground cursor-pointer"
+            >
+              docs
+            </a>
           </nav>
-          <div className="flex-1" />
-          <a className="hidden sm:flex items-center gap-1.5 font-mono text-[12px] text-muted-foreground hover:text-foreground cursor-pointer">
-            <Github className="size-4" /> 2.4k
-          </a>
-          <Link
-            href="/login"
-            className="hidden sm:flex font-mono text-[12px] text-muted-foreground hover:text-foreground px-2"
-          >
-            sign in
-          </Link>
-          <Link
-            href="/register"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            get started <ArrowRight className="size-3.5" />
-          </Link>
+          <div className="flex-grow" />
+          {isLoggedIn ? (
+            <Link
+              href={dashboardUrl}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              go to dashboard <ArrowRight className="size-3.5" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="hidden sm:flex font-mono text-[12px] text-muted-foreground hover:text-foreground px-2"
+              >
+                sign in
+              </Link>
+              <Link
+                href="/register"
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                get started <ArrowRight className="size-3.5" />
+              </Link>
+            </>
+          )}
         </div>
       </header>
 
@@ -113,28 +147,27 @@ export function Landing() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-surface-1 font-mono text-[11px] text-muted-foreground fade-up">
               <span className="size-1.5 rounded-full bg-primary live-dot" />
-              v0.1.0 Â· sdk available on npm
+              pulse feature management
             </div>
 
             <h1
               className="mt-6 text-[44px] sm:text-[56px] leading-[1.05] tracking-tight font-mono fade-up"
               style={{ animationDelay: '100ms' }}
             >
-              feature flags
+              release features
               <br />
-              <span className="gradient-text">built for</span>
+              <span className="gradient-text">with absolute</span>
               <br />
               <span className="text-foreground">
-                modern teams
+                confidence
               </span>
             </h1>
             <p
               className="mt-6 text-[15px] text-muted-foreground max-w-[520px] leading-relaxed fade-up"
               style={{ animationDelay: '200ms' }}
             >
-              Self-hostable, multi-tenant feature flag service with real-time
-              SSE propagation, local SDK evaluation, and a custom rule engine.
-              Ship features progressively without vendor lock-in.
+              Decouple deployments from releases. Pulse empowers modern product teams to launch 
+              features faster, target users precisely, and instantly mitigate risks—all with zero latency.
             </p>
 
             <div
@@ -142,24 +175,26 @@ export function Landing() {
               style={{ animationDelay: '300ms' }}
             >
               <Link
-                href="/acme-corp/novapay/staging/flags"
+                href={isLoggedIn ? dashboardUrl : '/register'}
                 className="flex items-center gap-2 px-5 py-3 rounded-md font-mono text-[13px] bg-primary text-primary-foreground hover:bg-primary/90 transition-colors glow-primary"
               >
-                launch dashboard <ArrowRight className="size-4" />
+                {isLoggedIn ? 'go to dashboard' : 'start for free'} <ArrowRight className="size-4" />
               </Link>
-              <button
-                type="button"
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 px-5 py-3 rounded-md font-mono text-[13px] bg-surface-1 border border-border text-foreground hover:border-border-strong"
               >
-                npm i @pulse-flags/sdk
-              </button>
+                view documentation
+              </a>
             </div>
 
             <div
               className="mt-10 flex items-center gap-6 font-mono text-[11.5px] text-muted-foreground fade-up"
               style={{ animationDelay: '400ms' }}
             >
-              {['docker compose up', 'MIT licensed', 'type-safe SDK'].map(
+              {['SOC2 compliant', 'Enterprise SLA', 'Always-on reliability'].map(
                 (t) => (
                   <span key={t} className="flex items-center gap-1.5">
                     <Check className="size-3 text-primary" /> {t}
@@ -188,20 +223,19 @@ export function Landing() {
       </div>
 
       {/* Features */}
-      <section className="relative max-w-[1200px] mx-auto px-8 py-24">
+      <section id="features" className="relative max-w-[1200px] mx-auto px-8 py-24">
         <div className="text-center max-w-[640px] mx-auto mb-14">
           <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-dim mb-3">
             // features
           </div>
           <h2 className="text-[34px] leading-tight font-mono">
-            engineered with senior-level
+            everything you need to
             <br />
-            judgment
+            scale your product
           </h2>
           <p className="mt-4 text-[14px] text-muted-foreground">
-            Every primitive â€” local evaluation, deterministic bucketing,
-            optimistic locking â€” chosen because it solves a real
-            distributed-systems problem.
+            Pulse provides a comprehensive toolset for progressive delivery. Give your 
+            developers and product managers the power to ship faster and safer.
           </p>
         </div>
 
@@ -242,34 +276,32 @@ export function Landing() {
       </section>
 
       {/* Architecture */}
-      <section className="relative max-w-[1200px] mx-auto px-8 py-12">
+      <section id="architecture" className="relative max-w-[1200px] mx-auto px-8 py-12">
         <Architecture />
       </section>
 
       {/* SDK / Code */}
-      <section className="relative max-w-[1200px] mx-auto px-8 py-24">
+      <section id="sdk" className="relative max-w-[1200px] mx-auto px-8 py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <div className="font-mono text-[11px] uppercase tracking-[0.25em] text-dim mb-3">
-              // sdk
+              // developer experience
             </div>
             <h2 className="text-[32px] leading-tight font-mono mb-5">
               integrate in
               <br />
-              five minutes<span className="text-primary">_</span>
+              minutes<span className="text-primary">_</span>
             </h2>
             <p className="text-[14px] text-muted-foreground leading-relaxed mb-6 max-w-[480px]">
-              A typed TypeScript SDK with three-tier fallback, exponential
-              reconnect, and ESM + CJS dual output.{' '}
-              <span className="text-foreground font-mono">isEnabled()</span> is
-              a synchronous, in-memory call.
+              Our type-safe SDK drops seamlessly into your existing stack. With local evaluation, 
+              network requests never block your rendering path.
             </p>
             <ul className="space-y-3 font-mono text-[12.5px]">
               {[
-                ['connect()', 'fetches the ruleset, opens an SSE channel'],
-                ['isEnabled()', 'evaluates locally â€” sub-ms, no network'],
-                ["on('flag:updated')", 'react to changes the instant they happen'],
-                ['close()', 'graceful teardown â€” cancels reconnect, drains queue'],
+                ['connect()', 'initializes real-time sync in the background'],
+                ['isEnabled()', 'evaluates instantly with zero latency'],
+                ["on('update')", 'react to configuration changes live'],
+                ['close()', 'gracefully tears down connections'],
               ].map(([fn, desc]) => (
                 <li key={fn} className="flex items-baseline gap-3">
                   <span className="text-primary">{fn}</span>
@@ -340,27 +372,29 @@ export function Landing() {
               // get started
             </div>
             <h2 className="text-[36px] leading-tight font-mono mb-4">
-              ship features without
+              take control of your
               <br />
-              <span className="gradient-text">shipping deploys</span>
+              <span className="gradient-text">release cycle</span>
             </h2>
             <p className="text-[14px] text-muted-foreground max-w-[520px] mx-auto mb-8">
-              Spin up the full stack locally with one command, or deploy to
-              Railway in under ten minutes. Free forever for personal projects.
+              Join leading teams who use Pulse to decouple deployment from release, 
+              mitigate risks, and ship with confidence.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
-                href="/acme-corp/novapay/staging/flags"
+                href={isLoggedIn ? dashboardUrl : '/register'}
                 className="flex items-center gap-2 px-6 py-3 rounded-md font-mono text-[13px] bg-primary text-primary-foreground hover:bg-primary/90 glow-primary"
               >
-                launch dashboard <ArrowRight className="size-4" />
+                {isLoggedIn ? 'go to dashboard' : 'start for free'} <ArrowRight className="size-4" />
               </Link>
-              <button
-                type="button"
+              <a
+                href={docsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-2 px-6 py-3 rounded-md font-mono text-[13px] bg-surface-2 border border-border text-foreground hover:border-border-strong"
               >
-                docker compose up
-              </button>
+                view documentation
+              </a>
             </div>
           </div>
         </div>
@@ -379,8 +413,8 @@ export function Landing() {
               </span>
             </div>
             <p className="text-muted-foreground max-w-[320px] leading-relaxed">
-              A self-hostable feature flag service with real-time propagation.
-              Built as an open-source portfolio project.
+              Pulse is a modern feature management platform designed for teams who want to 
+              ship faster and safer. We provide the tools you need to release with confidence.
             </p>
           </div>
           <div>
@@ -388,25 +422,59 @@ export function Landing() {
               // product
             </div>
             <ul className="space-y-2 text-muted-foreground">
-              {['features', 'sdk', 'docs', 'changelog'].map((i) => (
-                <li key={i}>{i}</li>
-              ))}
+              <li>
+                <a href="#features" className="hover:text-foreground">
+                  features
+                </a>
+              </li>
+              <li>
+                <a
+                  href="https://www.npmjs.com/package/@pulse-flags/sdk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground"
+                >
+                  sdk
+                </a>
+              </li>
+              <li>
+                <a
+                  href={docsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground"
+                >
+                  documentation
+                </a>
+              </li>
             </ul>
           </div>
           <div>
             <div className="text-dim uppercase tracking-widest text-[10.5px] mb-3">
-              // project
+              // company
             </div>
             <ul className="space-y-2 text-muted-foreground">
-              {['github', 'roadmap', 'license Â· MIT', 'self-host'].map((i) => (
-                <li key={i}>{i}</li>
-              ))}
+              <li>
+                <a href="#" className="hover:text-foreground">
+                  about
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-foreground">
+                  careers
+                </a>
+              </li>
+              <li>
+                <a href="#" className="hover:text-foreground">
+                  contact
+                </a>
+              </li>
             </ul>
           </div>
         </div>
         <div className="border-t border-border">
           <div className="max-w-[1200px] mx-auto px-8 py-5 flex items-center justify-between font-mono text-[11px] text-dim">
-            <span>// Â© 2026 pulse Â· all systems operational</span>
+            <span>// © 2026 pulse · all systems operational</span>
             <span className="flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-primary live-dot" />
               uptime 99.99%

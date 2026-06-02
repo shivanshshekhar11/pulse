@@ -21,6 +21,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.post('/', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Organizations'],
+      summary: 'Create Organization',
       body: CreateOrgRouteSchema.body,
       response: CreateOrgRouteSchema.response,
     },
@@ -61,6 +63,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Organizations'],
+      summary: 'Get Organization',
       params: GetOrgRouteSchema.params,
       response: GetOrgRouteSchema.response,
     },
@@ -84,6 +88,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.patch('/:orgSlug', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Organizations'],
+      summary: 'Update Organization',
       params: UpdateOrgRouteSchema.params,
       body: UpdateOrgRouteSchema.body,
       response: UpdateOrgRouteSchema.response,
@@ -127,6 +133,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.delete('/:orgSlug', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Organizations'],
+      summary: 'Delete Organization',
       params: DeleteOrgRouteSchema.params,
       response: DeleteOrgRouteSchema.response,
     },
@@ -164,6 +172,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/members', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Members'],
+      summary: 'List Organization Members',
       params: ListMembersRouteSchema.params,
       response: ListMembersRouteSchema.response,
     },
@@ -196,6 +206,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/members', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Members'],
+      summary: 'Invite Member',
       params: InviteMemberRouteSchema.params,
       body: InviteMemberRouteSchema.body,
       response: InviteMemberRouteSchema.response,
@@ -266,6 +278,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.patch('/:orgSlug/members/:userId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Members'],
+      summary: 'Update Member Role',
       params: UpdateMemberRoleRouteSchema.params,
       body: UpdateMemberRoleRouteSchema.body,
       response: UpdateMemberRoleRouteSchema.response,
@@ -327,6 +341,8 @@ export default async function orgRoutes(fastify: FastifyInstance) {
   f.delete('/:orgSlug/members/:userId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Members'],
+      summary: 'Remove Member',
       params: RemoveMemberRouteSchema.params,
     },
   }, async (request, reply) => {

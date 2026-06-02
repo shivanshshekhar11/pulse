@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Plus, Crown, Shield, User as UserIcon, Eye, MoreHorizontal, Loader2 } from 'lucide-react';
@@ -6,6 +6,7 @@ import { PageHeader } from '~/components/ui/page-header';
 import { InviteMemberDialog, ChangeRoleDialog } from '~/components/dialogs/member-dialogs';
 import { ConfirmDialog } from '~/components/dialogs/confirm';
 import { useMembers, useRemoveMember, useInviteMember, useUpdateMemberRole } from '~/lib/hooks/use-org';
+import { usePermission } from '~/lib/hooks/use-permissions';
 import type { OrgMemberResponse } from '@pulse-flags/types';
 
 type Role = 'owner' | 'admin' | 'member' | 'viewer';
@@ -29,6 +30,9 @@ export function MembersPage({ orgSlug }: { orgSlug: string }) {
   const removeMember = useRemoveMember(orgSlug);
   const inviteMember = useInviteMember(orgSlug);
   const updateMemberRole = useUpdateMemberRole(orgSlug);
+  const { hasPerm: canInvite } = usePermission(orgSlug, 'members:invite');
+  const { hasPerm: canUpdate } = usePermission(orgSlug, 'members:update');
+  const { hasPerm: canRemove } = usePermission(orgSlug, 'members:remove');
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [roleTarget, setRoleTarget] = useState<OrgMemberResponse | null>(null);
@@ -36,10 +40,12 @@ export function MembersPage({ orgSlug }: { orgSlug: string }) {
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <PageHeader crumb={`${orgSlug} / members`} title="members" command="pulse members list --org=acme-corp">
-        <button type="button" onClick={() => setInviteOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="size-3.5" strokeWidth={2.5} /> invite member
-        </button>
+      <PageHeader crumb={`${orgSlug} / members`} title="members" command={`pulse members list --org=${orgSlug}`}>
+        {canInvite && (
+          <button type="button" onClick={() => setInviteOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="size-3.5" strokeWidth={2.5} /> invite member
+          </button>
+        )}
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto px-10 py-6">
@@ -73,7 +79,7 @@ export function MembersPage({ orgSlug }: { orgSlug: string }) {
             {isLoading ? (
               <div className="flex items-center justify-center py-16 text-muted-foreground">
                 <Loader2 className="size-5 animate-spin mr-2" />
-                <span className="font-mono text-[12px]">loading membersâ€¦</span>
+                <span className="font-mono text-[12px]">loading members…</span>
               </div>
             ) : (
               <div className="rounded-md border border-border bg-surface-1 overflow-hidden">
@@ -99,18 +105,26 @@ export function MembersPage({ orgSlug }: { orgSlug: string }) {
                           <div className="font-mono text-[11.5px] text-muted-foreground truncate">{m.user.email}</div>
                         </div>
                       </div>
-                      <button type="button" onClick={() => setRoleTarget(m)} className="w-fit hover:opacity-80 transition-opacity">
+                      {canUpdate ? (
+                        <button type="button" onClick={() => setRoleTarget(m)} className="w-fit hover:opacity-80 transition-opacity">
+                          <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[11px] border w-fit ${info.color}`}>
+                            <Icon className="size-3" />{info.label}
+                          </span>
+                        </button>
+                      ) : (
                         <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[11px] border w-fit ${info.color}`}>
                           <Icon className="size-3" />{info.label}
                         </span>
-                      </button>
+                      )}
                       <span className="font-mono text-[11.5px] text-muted-foreground">
                         {new Date(m.joinedAt as string | Date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </span>
                       <div className="flex justify-end">
-                        <button type="button" onClick={() => setRemoveTarget(m)} className="size-7 grid place-items-center rounded border border-transparent hover:border-border hover:bg-surface-2 text-dim hover:text-foreground">
-                          <MoreHorizontal className="size-3.5" />
-                        </button>
+                        {canRemove && (
+                          <button type="button" onClick={() => setRemoveTarget(m)} className="size-7 grid place-items-center rounded border border-transparent hover:border-border hover:bg-surface-2 text-dim hover:text-foreground">
+                            <MoreHorizontal className="size-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

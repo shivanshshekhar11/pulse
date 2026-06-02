@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useSession, signOut } from 'next-auth/react';
 import {
@@ -60,7 +60,7 @@ export function UserMenuPopover({
       </div>
       <PopoverSeparator />
       <div className="py-1">
-        <PopoverItem icon={LogOut} label="sign out" danger hint="âŒ˜â‡§Q" onClick={handleSignOut} />
+        <PopoverItem icon={LogOut} label="sign out" danger hint="⌘⇧Q" onClick={handleSignOut} />
       </div>
     </Popover>
   );

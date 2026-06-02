@@ -79,7 +79,7 @@ export function ConfirmDialog({
             <ul className="space-y-1.5 text-[12.5px] text-muted-foreground">
               {consequences.map((c) => (
                 <li key={c} className="flex items-start gap-2">
-                  <span className="text-destructive mt-1">Â·</span>
+                  <span className="text-destructive mt-1">·</span>
                   <span>{c}</span>
                 </li>
               ))}

@@ -1,43 +1,24 @@
 'use client';
 
-/**
- * Toggle — custom pill switch used throughout the dashboard.
- * Uses a plain button (not Radix Switch) to keep the animation
- * exactly as designed in the Figma source.
- */
+import { cn } from './lib/cn';
+
 export function Toggle({
   on,
   onChange,
   size = 'md',
   disabled = false,
+  className,
 }: {
   on: boolean;
   onChange?: (next: boolean) => void;
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
+  className?: string;
 }) {
   const dims = {
-    sm: {
-      track: 'w-9 h-5',
-      knob: 'size-[14px]',
-      on: 'translate-x-[19px]',
-      off: 'translate-x-[3px]',
-      style: { width: '36px', height: '20px' },
-    },
-    md: {
-      track: 'w-11 h-6',
-      knob: 'size-[18px]',
-      on: 'translate-x-[23px]',
-      off: 'translate-x-[3px]',
-      style: { width: '44px', height: '24px' },
-    },
-    lg: {
-      track: 'w-14 h-7',
-      knob: 'size-[22px]',
-      on: 'translate-x-[31px]',
-      off: 'translate-x-[3px]',
-      style: { width: '56px', height: '28px' },
-    },
+    sm: { track: 'w-7 h-4', knob: 'size-3', on: 'translate-x-3' },
+    md: { track: 'w-9 h-5', knob: 'size-4', on: 'translate-x-4' },
+    lg: { track: 'w-11 h-6', knob: 'size-5', on: 'translate-x-5' },
   }[size];
 
   return (
@@ -46,19 +27,24 @@ export function Toggle({
       role="switch"
       aria-checked={on}
       disabled={disabled}
-      style={dims.style}
       onClick={(e) => {
         e.stopPropagation();
         onChange?.(!on);
       }}
-      className={`relative rounded-full transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${
-        on ? 'bg-primary' : 'bg-surface-3'
-      }`}
+      className={cn(
+        'relative inline-flex shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+        dims.track,
+        on ? 'bg-primary' : 'bg-surface-3',
+        className
+      )}
     >
       <span
-        className={`absolute top-1/2 -translate-y-1/2 ${dims.knob} rounded-full bg-background transition-transform ${
-          on ? dims.on : dims.off
-        }`}
+        className={cn(
+          'pointer-events-none block rounded-full shadow-sm transition-transform',
+          dims.knob,
+          on ? dims.on : 'translate-x-0',
+          on ? 'bg-background' : 'bg-foreground'
+        )}
       />
     </button>
   );

@@ -36,6 +36,19 @@ jobs:
       - name: Start services (Docker Compose)
         run: docker compose up -d
 
+      - name: Wait for Postgres to be healthy
+        run: |
+          echo "Waiting for Postgres..."
+          until docker compose exec -T postgres pg_isready -U pulse; do
+            sleep 1
+          done
+          echo "Postgres is ready."
+
+      - name: Run DB migrations
+        run: pnpm --filter @pulse-flags/api db:migrate
+        env:
+          DATABASE_URL: postgresql://pulse:pulse@localhost:5432/pulse
+
       - name: Lint
         run: pnpm run lint
 
@@ -48,7 +61,7 @@ jobs:
       - name: E2E Tests
         run: pnpm run test:e2e
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pulse
+          DATABASE_URL: postgresql://pulse:pulse@localhost:5432/pulse
           REDIS_URL: redis://localhost:6379
 
       - name: Upload Playwright Report

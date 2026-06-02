@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
@@ -11,8 +11,9 @@ import {
   Mail, Lock, User as UserIcon, Eye, EyeOff, ArrowRight, Check,
 } from 'lucide-react';
 import { Field, Input, Checkbox } from '@pulse-flags/ui';
+import { env } from '~/env';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const API_URL = env.NEXT_PUBLIC_API_URL;
 
 function scorePw(p: string) {
   let s = 0;
@@ -57,11 +58,9 @@ export function RegisterForm() {
       // 2. Sign in immediately after registration
       const result = await signIn('credentials', { email: data.email, password: data.password, redirect: false });
       if (result?.error) {
-        setError('Account created but sign-in failed. Please sign in manually.');
-        router.push('/login');
+        setError(result.error);
       } else {
-        // Root page reads orgSlug from session and redirects to /{orgSlug}/projects
-        router.push('/');
+        router.push('/_/projects');
         router.refresh();
       }
     } catch {
@@ -165,7 +164,7 @@ function FeaturePanel() {
           </pre>
         </div>
         <ul className="space-y-3">
-          {['p99 < 12ms global eval â€” three-tier SDK fallback', 'self-hostable Â· no SaaS lock-in Â· MIT licensed', 'developer-first DX with first-class SDKs', 'audit log every change Â· optimistic locking built-in'].map((f) => (
+          {['p99 < 12ms global eval — three-tier SDK fallback', 'self-hostable · no SaaS lock-in · MIT licensed', 'developer-first DX with first-class SDKs', 'audit log every change · optimistic locking built-in'].map((f) => (
             <li key={f} className="flex items-start gap-2.5 text-[12.5px] text-muted-foreground">
               <Check className="size-3.5 text-primary mt-1 shrink-0" />
               <span>{f}</span>

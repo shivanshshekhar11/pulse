@@ -77,7 +77,7 @@ export function OrgSwitcherPopover({
                   <div className="text-[12.5px] truncate">{o.name}</div>
                   <div className="font-mono text-[10.5px] text-muted-foreground flex items-center gap-1.5">
                     <span>{o.plan}</span>
-                    <span className="text-dim">Â·</span>
+                    <span className="text-dim">·</span>
                     <Users className="size-2.5" />
                     <span>{o.role}</span>
                   </div>

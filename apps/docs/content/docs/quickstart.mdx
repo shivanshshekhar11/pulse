@@ -1,0 +1,71 @@
+---
+title: Quickstart
+description: Get up and running with Pulse in less than 5 minutes.
+---
+
+In this quickstart, you'll learn how to integrate the Pulse SDK into a simple Next.js (or Node.js) application and evaluate your first feature flag.
+
+## 1. Create an API Key
+
+Before integrating the SDK, you'll need an Environment API key.
+
+1. Open the Pulse Dashboard.
+2. Create a new **Project** (or select an existing one).
+3. Navigate to **Environments** and select your desired environment (e.g., `production`).
+4. Click **Create API Key** and copy the resulting `ps_live_...` or `ps_test_...` key. Keep this safe!
+
+## 2. Install the SDK
+
+Install the `@pulse-flags/sdk` package via your preferred package manager.
+
+```bash
+npm install @pulse-flags/sdk
+```
+
+## 3. Initialize the Client
+
+Initialize the `PulseClient` as early as possible in your application lifecycle. You can pass the API Key explicitly, or the SDK will automatically read it from the `PULSE_API_KEY` environment variable.
+
+```typescript
+import { PulseClient } from '@pulse-flags/sdk';
+
+const pulse = new PulseClient({
+  apiKey: process.env.NEXT_PUBLIC_PULSE_API_KEY,
+  // If self-hosting, point to your API URL:
+  apiUrl: 'https://api.pulseflags.live', 
+});
+```
+
+## 4. Connect to Real-time Updates
+
+To start listening for flag updates, call `connect()`. This will download the initial ruleset and open a persistent Server-Sent Events (SSE) connection.
+
+```typescript
+await pulse.connect();
+
+// Listen for updates
+pulse.on('update', () => {
+  console.log('Feature flags have been updated!');
+});
+```
+
+## 5. Evaluate a Flag
+
+You can now evaluate feature flags instantly with zero network latency. The `evaluate` method takes the flag key, an optional context object (for targeting rules), and a default fallback value.
+
+```typescript
+const isNewFeatureEnabled = pulse.evaluate('new-dashboard', {
+  userId: 'user_123',
+  email: 'test@example.com'
+}, false);
+
+if (isNewFeatureEnabled) {
+  // Show new feature
+} else {
+  // Show old feature
+}
+```
+
+## Next Steps
+
+Now that you've evaluated your first flag, explore the full capabilities of the SDK in the [Evaluation Guide](/docs/sdk/evaluation) or learn how [Real-time updates](/docs/sdk/realtime) work under the hood.

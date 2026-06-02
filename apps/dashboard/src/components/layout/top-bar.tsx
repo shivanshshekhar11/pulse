@@ -1,16 +1,19 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { ChevronRight, GitBranch, Plus } from 'lucide-react';
+import { ChevronRight, GitBranch, Plus, Book } from 'lucide-react';
+import { env } from '~/env';
 import { cn } from '~/lib/cn';
 import { UserMenuPopover } from '~/components/popovers/user-menu';
 import { FlagDialog } from '~/components/dialogs/flag-dialog';
 import { useEnvironments } from '~/lib/hooks/use-projects';
 
-// These are known org-level route segments â€” not project slugs.
+import { usePermission } from '~/lib/hooks/use-permissions';
+
+// These are known org-level route segments — not project slugs.
 const ORG_SEGMENTS = new Set([
   'segments', 'api-keys', 'members', 'audit', 'settings', 'projects',
 ]);
@@ -40,6 +43,7 @@ export function TopBar() {
   const router = useRouter();
   const { data: session } = useSession();
   const { data: environments } = useEnvironments(orgSlug, projectSlug);
+  const { hasPerm: canWriteFlags } = usePermission(orgSlug, 'flags:write');
 
   const avatarRef = useRef<HTMLButtonElement | null>(null);
 
@@ -87,7 +91,7 @@ export function TopBar() {
           )}
         </div>
 
-        {/* Environment tabs â€” only inside a project */}
+        {/* Environment tabs — only inside a project */}
         {isProjectRoute && envList.length > 0 && (
           <div className="ml-6 flex items-center gap-1 p-0.5 bg-surface-1 rounded-md border border-border">
             {envList.map((env) => (
@@ -112,8 +116,18 @@ export function TopBar() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {/* New flag â€” only when inside a project env */}
-          {isProjectRoute && projectSlug && envName && (
+          <a
+            href={env.NEXT_PUBLIC_DOCS_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-mono text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors mr-2"
+          >
+            <Book className="size-3.5" />
+            docs
+          </a>
+
+          {/* New flag — only when inside a project env and has permission */}
+          {isProjectRoute && projectSlug && envName && canWriteFlags && (
             <button
               type="button"
               onClick={() => setFlagDialogOpen(true)}

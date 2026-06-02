@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -6,6 +6,7 @@ import { Plus, Boxes, Flag, ChevronRight, GitBranch, Loader2 } from 'lucide-reac
 import { PageHeader } from '~/components/ui/page-header';
 import { ProjectDialog } from '~/components/dialogs/project-dialog';
 import { useProjects, useEnvironments, useCreateProject } from '~/lib/hooks/use-projects';
+import { usePermission } from '~/lib/hooks/use-permissions';
 import type { ProjectResponse, EnvironmentResponse } from '@pulse-flags/types';
 
 const ENV_COLORS: Record<string, string> = {
@@ -18,25 +19,33 @@ export function ProjectsPage({ orgSlug }: { orgSlug: string }) {
   const { data: projects, isLoading } = useProjects(orgSlug);
   const createProject = useCreateProject(orgSlug);
   const [createOpen, setCreateOpen] = useState(false);
+  const { hasPerm: canWrite } = usePermission(orgSlug, 'projects:write');
 
   return (
     <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-      <PageHeader crumb={`${orgSlug} / projects`} title="projects" command="pulse projects list --org=acme-corp">
-        <button type="button" onClick={() => setCreateOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="size-3.5" strokeWidth={2.5} /> new project
-        </button>
+      <PageHeader crumb={`${orgSlug} / projects`} title="projects" command={`pulse projects list --org=${orgSlug}`}>
+        {canWrite && (
+          <button type="button" onClick={() => setCreateOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-md font-mono text-[12px] bg-primary text-primary-foreground hover:bg-primary/90">
+            <Plus className="size-3.5" strokeWidth={2.5} /> new project
+          </button>
+        )}
       </PageHeader>
 
       <div className="flex-1 overflow-y-auto px-10 py-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground">
             <Loader2 className="size-5 animate-spin mr-2" />
-            <span className="font-mono text-[12px]">loading projectsâ€¦</span>
+            <span className="font-mono text-[12px]">loading projects…</span>
           </div>
         ) : !projects || projects.length === 0 ? (
           <div className="text-center py-20 font-mono text-[12px] text-dim">
-            // no projects yet Â·{' '}
-            <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button>
+            // no projects yet
+            {canWrite && (
+              <>
+                {' · '}
+                <button type="button" onClick={() => setCreateOpen(true)} className="text-primary hover:underline">create one</button>
+              </>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 max-w-[1200px]">

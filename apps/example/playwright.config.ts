@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:3002',
+    baseURL: 'http://127.0.0.1:3003',
     trace: 'on-first-retry',
   },
   projects: [
@@ -17,9 +17,16 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    command: 'pnpm run dev --port 3002',
-    url: 'http://127.0.0.1:3002',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: 'pnpm --filter @pulse-flags/api dev',
+      url: 'http://127.0.0.1:4000/health',
+      reuseExistingServer: !process.env.CI,
+    },
+    {
+      command: 'pnpm run dev',
+      url: 'http://127.0.0.1:3003',
+      reuseExistingServer: !process.env.CI,
+    },
+  ],
 });

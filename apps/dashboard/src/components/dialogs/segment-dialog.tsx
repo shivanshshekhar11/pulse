@@ -1,4 +1,4 @@
-﻿
+
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -144,7 +144,7 @@ export function SegmentDialog({
       <DialogFooter hint="segment conditions">
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" icon={mode === 'create' ? Plus : Save} disabled={!canSubmit || loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'savingâ€¦' : mode === 'create' ? 'create segment' : 'save changes'}
+          {loading ? 'saving…' : mode === 'create' ? 'create segment' : 'save changes'}
         </Button>
       </DialogFooter>
     </Dialog>

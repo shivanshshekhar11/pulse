@@ -1,5 +1,3 @@
-﻿import { redirect } from 'next/navigation';
-import { auth } from '~/lib/auth';
 import { Landing } from '~/components/landing/landing';
 
 /**
@@ -11,15 +9,7 @@ import { Landing } from '~/components/landing/landing';
  * Unauthenticated users see the public landing page.
  */
 export default async function RootPage() {
-  const session = await auth();
-
-  if (session?.accessToken) {
-    const orgSlug = (session as { orgSlug?: string }).orgSlug;
-    if (orgSlug) {
-      redirect(`/${orgSlug}/projects`);
-    }
-    // Has a session but no org yet â€” show landing so they can create one
-  }
-
+  // Return the public landing page for everyone. 
+  // Authenticated users who specifically navigate to '/' will not be forced back into the dashboard.
   return <Landing />;
 }

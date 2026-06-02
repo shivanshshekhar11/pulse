@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, getSession } from 'next-auth/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoginSchema, type Login } from '@pulse-flags/types';
@@ -35,7 +35,12 @@ export function LoginForm() {
       if (result?.error) {
         setError('Invalid email or password.');
       } else {
-        router.push('/');
+        const session = await getSession();
+        if (session?.orgSlug) {
+          router.push(`/${session.orgSlug}/projects`);
+        } else {
+          router.push('/_/projects');
+        }
         router.refresh();
       }
     } finally {
@@ -163,10 +168,10 @@ function FeaturePanel() {
         </div>
         <ul className="space-y-3">
           {[
-            'p99 < 12ms global eval â€” three-tier SDK fallback',
-            'self-hostable Â· no SaaS lock-in Â· MIT licensed',
+            'p99 < 12ms global eval — three-tier SDK fallback',
+            'self-hostable · no SaaS lock-in · MIT licensed',
             'developer-first DX with first-class SDKs',
-            'audit log every change Â· optimistic locking built-in',
+            'audit log every change · optimistic locking built-in',
           ].map((f) => (
             <li key={f} className="flex items-start gap-2.5 text-[12.5px] text-muted-foreground">
               <Check className="size-3.5 text-primary mt-1 shrink-0" />

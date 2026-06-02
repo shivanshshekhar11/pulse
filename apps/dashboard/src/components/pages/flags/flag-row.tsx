@@ -28,9 +28,9 @@ function formatRelative(date: string | Date): string {
 export function FlagRow({ flag }: { flag: FlagResponse }) {
   const Icon = TYPE_ICON[flag.type];
 
-  // The API doesn't return rollout% directly â€” that lives on rules.
+  // The API doesn't return rollout% directly — that lives on rules.
   // We show the flag's enabled state and rule count instead.
-  const ruleCount = 'â€”';
+  const ruleCount = '—';
 
   return (
     <div className="group grid grid-cols-[28px_1fr_140px_180px_200px_64px] gap-6 items-center px-6 py-5 border-b border-border cursor-pointer transition-colors hover:bg-surface-1/60">
@@ -56,7 +56,7 @@ export function FlagRow({ flag }: { flag: FlagResponse }) {
         <div className="font-mono text-[12.5px] text-muted-foreground mt-1.5 flex items-center gap-2">
           <span className="text-primary/80">$</span>
           <span className="truncate">{flag.key}</span>
-          <span className="text-dim">Â·</span>
+          <span className="text-dim">·</span>
           <span className="text-dim">v{flag.version}</span>
         </div>
       </div>
@@ -69,7 +69,7 @@ export function FlagRow({ flag }: { flag: FlagResponse }) {
         </span>
       </div>
 
-      {/* Enabled state (rollout% requires rules fetch â€” show enabled/disabled) */}
+      {/* Enabled state (rollout% requires rules fetch — show enabled/disabled) */}
       <div className="font-mono text-[12px]">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-muted-foreground">status</span>
@@ -87,7 +87,7 @@ export function FlagRow({ flag }: { flag: FlagResponse }) {
         <div className="flex items-center gap-2">
           <Users className="size-3.5 text-dim shrink-0" />
           <span className="text-dim">all users</span>
-          <span className="text-dim">Â·</span>
+          <span className="text-dim">·</span>
           <span className="text-foreground">{ruleCount}</span>
           <span className="text-dim">rules</span>
         </div>

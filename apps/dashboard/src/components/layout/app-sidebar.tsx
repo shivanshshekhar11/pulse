@@ -23,8 +23,8 @@ type NavItem = {
   label: string;
 };
 
-// All workspace nav items are org-scoped â€” no project/env dependency.
-// Flags are accessed through Projects â†’ Project Overview â†’ View Flags.
+// All workspace nav items are org-scoped — no project/env dependency.
+// Flags are accessed through Projects → Project Overview → View Flags.
 const NAV_WORKSPACE: NavItem[] = [
   { href: (o) => `/${o}/projects`, matchSegment: 'projects', icon: Boxes, label: 'Projects' },
   { href: (o) => `/${o}/segments`, matchSegment: 'segments', icon: Layers, label: 'Segments' },
@@ -40,9 +40,9 @@ const NAV_ORG: NavItem[] = [
 function useRouteSegments() {
   const pathname = usePathname();
   const parts = pathname.split('/').filter(Boolean);
-  // /acme-corp                          â†’ orgSlug=acme-corp, rest=[]
-  // /acme-corp/segments                 â†’ orgSlug=acme-corp, rest=[segments]
-  // /acme-corp/novapay/staging/flags    â†’ orgSlug=acme-corp, rest=[novapay,staging,flags]
+  // /acme-corp                          → orgSlug=acme-corp, rest=[]
+  // /acme-corp/segments                 → orgSlug=acme-corp, rest=[segments]
+  // /acme-corp/novapay/staging/flags    → orgSlug=acme-corp, rest=[novapay,staging,flags]
   const orgSlug = parts[0] ?? '';
 
   // Determine the active sidebar segment.
@@ -147,7 +147,7 @@ export function AppSidebar() {
         <div className="border-t border-border px-3 py-2.5 font-mono text-[10px] space-y-1">
           <div className="flex items-center justify-between text-muted-foreground">
             <span>env</span>
-            <span>{envName || 'â€”'}</span>
+            <span>{envName || '—'}</span>
           </div>
         </div>
       </aside>

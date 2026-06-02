@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
@@ -83,10 +83,10 @@ export function InviteMemberDialog({
           <span className="text-info">// </span>org roles can be overridden per-project from the member&apos;s profile.
         </div>
       </DialogBody>
-      <DialogFooter hint="audit logged Â· invitee notified by email">
+      <DialogFooter hint="audit logged · invitee notified by email">
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" icon={Send} disabled={loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'sendingâ€¦' : 'send invite'}
+          {loading ? 'sending…' : 'send invite'}
         </Button>
       </DialogFooter>
     </Dialog>
@@ -140,7 +140,7 @@ export function ChangeRoleDialog({
       <DialogFooter>
         <Button variant="ghost" onClick={onClose}>cancel</Button>
         <Button variant="primary" disabled={loading} onClick={handleSubmit(onValid)}>
-          {loading ? 'savingâ€¦' : 'save'}
+          {loading ? 'saving…' : 'save'}
         </Button>
       </DialogFooter>
     </Dialog>

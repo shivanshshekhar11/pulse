@@ -107,9 +107,14 @@ export class PulseTestClient {
     const rulesRes = (await res.json()) as { data: { id: string }[] };
     
     await Promise.all(
-      rulesRes.data.map((r: { id: string }) =>
-        this.request('DELETE', `${this.basePath}/${flagKey}/rules/${r.id}`)
-      )
+      rulesRes.data.map(async (r: { id: string }) => {
+        const delRes = await this.request('DELETE', `${this.basePath}/${flagKey}/rules/${r.id}`);
+        if (!delRes.ok) {
+          const text = await delRes.text();
+          throw new Error(`Failed to delete rule ${r.id} (status ${delRes.status}): ${text}`);
+        }
+        return delRes;
+      })
     );
   }
 
@@ -195,12 +200,15 @@ export class PulseTestClient {
   }
 
   private request(method: string, path: string, body?: unknown): Promise<Response> {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${this.accessToken}`,
+    };
+    if (body !== undefined) {
+      headers['Content-Type'] = 'application/json';
+    }
     return fetch(`${this.apiUrl}${path}`, {
       method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.accessToken}`,
-      },
+      headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   }

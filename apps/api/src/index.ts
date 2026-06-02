@@ -4,7 +4,10 @@ import jwt from '@fastify/jwt';
 import {
   serializerCompiler,
   validatorCompiler,
+  jsonSchemaTransform,
 } from 'fastify-type-provider-zod';
+import swagger from '@fastify/swagger';
+import scalar from '@scalar/fastify-api-reference';
 import { config } from './env';
 
 const fastify = Fastify({
@@ -22,8 +25,37 @@ fastify.setSerializerCompiler(serializerCompiler);
 
 // ── Plugins ───────────────────────────────────────────────────────────────────
 
+await fastify.register(swagger, {
+  openapi: {
+    info: {
+      title: 'Pulse API',
+      description: 'API documentation for the Pulse feature flag service',
+      version: '1.0.0',
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+  },
+  transform: jsonSchemaTransform,
+});
+
+await fastify.register(scalar, {
+  routePrefix: '/reference',
+  configuration: {
+    title: 'Pulse API Reference',
+    spec: {
+      content: () => fastify.swagger(),
+    },
+  },
+});
 await fastify.register(cors, {
-  origin: config.nodeEnv === 'production' ? false : true,
+  origin: config.nodeEnv === 'production' ? config.cors.allowedOrigins : true,
   credentials: true,
 });
 
@@ -47,13 +79,6 @@ fastify.decorate(
     reply: import('fastify').FastifyReply
   ) {
     try {
-      // Extract token from query string (fallback if fastify drops it)
-      const tokenMatch = request.url.match(/[?&]token=([^&]+)/);
-      const token = (request.query as { token?: string })?.token || (tokenMatch ? tokenMatch[1] : undefined);
-      
-      if (token) {
-        request.headers.authorization = `Bearer ${token}`;
-      }
       await request.jwtVerify();
     } catch {
       reply.code(401).send({
@@ -111,6 +136,7 @@ fastify.setErrorHandler(
 
 // ── Health check ──────────────────────────────────────────────────────────────
 
+fastify.get('/', async () => ({ message: 'hello world' }));
 fastify.get('/health', async () => ({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // ── Routes ────────────────────────────────────────────────────────────────────

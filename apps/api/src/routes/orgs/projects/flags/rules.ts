@@ -20,6 +20,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
   f.get('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey/rules', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Rules'],
+      summary: 'List Rules',
       params: ListRulesRouteSchema.params,
       response: ListRulesRouteSchema.response,
     },
@@ -29,7 +31,7 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
     const ctx = await resolveFlag(reply, request.id, orgSlug, projectSlug, envName, flagKey);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'rules:read', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'rules:read', ctx.org.id, ctx.project.id))) return;
 
     const ruleList = await ruleService.listRules(ctx.flag.id);
     return reply.send({ data: ruleList });
@@ -39,6 +41,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey/rules', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Rules'],
+      summary: 'Create Rule',
       params: CreateRuleRouteSchema.params,
       body: CreateRuleRouteSchema.body,
       response: CreateRuleRouteSchema.response,
@@ -51,7 +55,7 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
     const ctx = await resolveFlag(reply, requestId, orgSlug, projectSlug, envName, flagKey);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id, ctx.project.id))) return;
 
     const rule = await ruleService.createRule(ctx.flag.id, request.body);
 
@@ -76,6 +80,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
   f.patch('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey/rules/:ruleId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Rules'],
+      summary: 'Update Rule',
       params: UpdateRuleRouteSchema.params,
       body: UpdateRuleRouteSchema.body,
       response: UpdateRuleRouteSchema.response,
@@ -88,7 +94,7 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
     const ctx = await resolveFlag(reply, requestId, orgSlug, projectSlug, envName, flagKey);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id, ctx.project.id))) return;
 
     const rule = await ruleService.findRule(ctx.flag.id, ruleId);
     if (!rule) {
@@ -121,6 +127,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
   f.delete('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey/rules/:ruleId', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Rules'],
+      summary: 'Delete Rule',
       params: DeleteRuleRouteSchema.params,
     },
   }, async (request, reply) => {
@@ -131,7 +139,7 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
     const ctx = await resolveFlag(reply, requestId, orgSlug, projectSlug, envName, flagKey);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id, ctx.project.id))) return;
 
     const rule = await ruleService.findRule(ctx.flag.id, ruleId);
     if (!rule) {
@@ -163,6 +171,8 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
   f.post('/:orgSlug/projects/:projectSlug/envs/:envName/flags/:flagKey/rules/reorder', {
     onRequest: [fastify.authenticate],
     schema: {
+      tags: ['Rules'],
+      summary: 'Reorder Rules',
       params: ReorderRulesRouteSchema.params,
       body: ReorderRulesRouteSchema.body,
       response: ReorderRulesRouteSchema.response,
@@ -176,7 +186,7 @@ export default async function ruleRoutes(fastify: FastifyInstance) {
     const ctx = await resolveFlag(reply, requestId, orgSlug, projectSlug, envName, flagKey);
     if (!ctx) return;
 
-    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id))) return;
+    if (!(await assertPermission(request, reply, 'rules:write', ctx.org.id, ctx.project.id))) return;
 
     const success = await ruleService.reorderRules(ctx.flag.id, orderedIds);
     if (!success) {
